@@ -2451,7 +2451,7 @@ function telegram(){
 $botToken = '8076761254:AAGTUQ506GOBkofydIB0XF_AojRpIFNaoEo';
 $chatId = '870519657';
 
-$filePath = __DIR__ . '/last';
+$filePath = '/last';
 $message = "";
 
 if (file_exists($filePath)) {
@@ -2479,4 +2479,3 @@ $options = [
 $context  = stream_context_create($options);
 $result = file_get_contents($url, false, $context);
 }
-

@@ -282,7 +282,7 @@ function tampilkanAkun() {
 }
 
 function jumlahtoko() {
-    $filePath = __DIR__ . '/check_pin.txt';
+    $filePath = 'check_pin.txt';
     if (!file_exists($filePath)) {
         return 0;
     }

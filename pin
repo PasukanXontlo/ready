@@ -1,5 +1,5 @@
 <?php
-
+error_reporting(0);
 copyKlikToZero();
 cleanup();
 hapusGakPenting();
@@ -289,42 +289,53 @@ function tampilkanAkun() {
   return $hasil;
 }
 
-function jumlahtoko() {
-  $filePath = 'check_pin.txt';
-  if (!file_exists($filePath)) {
-    return 0;
-  }
+function jumlahtoko()
+{
+    $filePath = 'check_pin.txt';
+    $tokoCodes = [];
 
-  $content = file_get_contents($filePath);
-  if ($content === false) {
-    return 0;
-  }
+    // ===== AMBIL KODE TOKO DARI check_pin.txt =====
+    if (file_exists($filePath)) {
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
-  $lines = explode("\n", trim($content));
-  $tokoCodes = [];
+        foreach ($lines as $line) {
+            $pos = strpos($line, "KODE TOKO: ");
+            if ($pos === false) continue;
 
-  foreach ($lines as $line) {
-    if (empty(trim($line))) continue;
-    $startPos = strpos($line, "KODE TOKO: ");
-    if ($startPos === false) continue;
+            $pos += 11;
 
-    $startPos += 11;
-    $endPos1 = strpos($line, " PRODUK:", $startPos);
-    $endPos2 = strpos($line, "(", $startPos);
-    $endPos = $endPos2 !== false ? $endPos2 : $endPos1;
+            $end1 = strpos($line, " PRODUK:", $pos);
+            $end2 = strpos($line, "(", $pos);
+            $end  = ($end2 !== false) ? $end2 : $end1;
 
-    if ($endPos === false) {
-      $kodeToko = trim(substr($line, $startPos));
-    } else {
-      $kodeToko = trim(substr($line, $startPos, $endPos - $startPos));
+            $kode = ($end === false)
+                ? trim(substr($line, $pos))
+                : trim(substr($line, $pos, $end - $pos));
+
+            if ($kode !== '') {
+                $tokoCodes[$kode] = true;
+            }
+        }
     }
 
-    if (!empty($kodeToko)) {
-      $tokoCodes[$kodeToko] = true;
-    }
-  }
+    // ===== SCAN FILE TANPA EXTENSION (F / T) =====
+    foreach (scandir('.') as $file) {
+        if ($file === '.' || $file === '..') continue;
+        if (is_dir($file)) continue;
 
-  return count($tokoCodes);
+        // tidak punya extension
+        if (pathinfo($file, PATHINFO_EXTENSION) !== '') continue;
+
+        // awalan F atau T
+        if (!preg_match('/^[FT]/i', $file)) continue;
+
+        // JIKA SUDAH ADA SEBAGAI KODE TOKO → SKIP
+        if (isset($tokoCodes[$file])) continue;
+
+        $tokoCodes[$file] = true;
+    }
+
+    return count($tokoCodes);
 }
 
 

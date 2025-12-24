@@ -1,7 +1,6 @@
 <?php
-error_reporting(0);
+//error_reporting(0);
 copyKlikToZero();
-cleanup();
 hapusGakPenting();
 tampilkanMenu();
 
@@ -32,6 +31,7 @@ class Warna {
 ===========================================*/
 function tampilkanMenu() {
   while (true) {
+    
     echo "\n" . Warna::BOLD_CYAN . "╔═══════════════════════════════════════╗" . Warna::RESET . "\n";
     echo Warna::BOLD_CYAN . "║" . Warna::BOLD_KUNING . "           AUTO JASDER AREA            " . Warna::BOLD_CYAN . "║" . Warna::RESET . "\n";
     echo Warna::BOLD_CYAN . "╚═══════════════════════════════════════╝" . Warna::RESET . "\n";
@@ -46,11 +46,15 @@ function tampilkanMenu() {
     echo Warna::BOLD_KUNING . "   [9] " . Warna::PUTIH . "Create Manual Order \n";
     echo Warna::BOLD_KUNING . "   [10] " . Warna::PUTIH . "Auto Cekstock\n";
     echo Warna::BOLD_KUNING . "   [11] " . Warna::PUTIH . "Create Order Dari Cek Stock\n";
+    echo Warna::BOLD_KUNING . "   [12] " . Warna::PUTIH . "Auto Cancel\n";
+    echo Warna::BOLD_KUNING . "   [13] " . Warna::PUTIH . "Auto Cek Payment\n";
+    echo Warna::BOLD_KUNING . "   [14] " . Warna::PUTIH . "Auto Co Kupon\n";
     echo Warna::BOLD_MAGENTA . "   [r] " . Warna::KUNING . "Run SC\n";
     echo Warna::BOLD_MAGENTA . "   [a] " . Warna::KUNING . "Reset Akun Baru\n";
+    echo Warna::BOLD_MAGENTA . "   [c] " . Warna::KUNING . "Bersihkan Sampah \033[96;1m( ".sampah()." Gb )\n";
     echo Warna::BOLD_MAGENTA . "   [x] " . Warna::KUNING . "Keluar\n";
     echo tampilkanAkun();
-
+    echo "\033[96;1m ".getcwd()." : ";
     $pilihan = readline(Warna::BOLD_KUNING . "\n› Pilih menu [0-12]: " . Warna::RESET);
 
     switch ($pilihan) {
@@ -65,8 +69,13 @@ function tampilkanMenu() {
       case '9': manualorder(); break;
       case '10': autocekstock(); break;
       case '11': hapusstoknol(); break;
+      case '12': autoCancel(); break;
+      case '13': autoCekPayment(); break;
+      case '14': autoCoKupon(); break;
       case 'r': jalankanGasJasder(); break;
       case 'a': adjustindex(); break;
+      case 'c': cleanup(); break;
+      
       case 'x':
         file_put_contents("stop.txt", "");
         echo Warna::BOLD_HIJAU . "\n✓ Terima kasih! Program selesai.\n" . Warna::RESET;
@@ -340,6 +349,7 @@ function jumlahtoko()
 
 
 function adjustindex() {
+  hapusFileFTTanpaExt();
   $file0 = "0";
   $lastFile = "last";
   $klikFile = "klik.txt";
@@ -389,7 +399,7 @@ function adjustindex() {
   $duplicatesRemoved = count($lines) - $totalUnique;
 
 
-  file_put_contents($lastFile, "0");
+  file_put_contents($lastFile, "1");
 
 
   file_put_contents($klikFile, "");
@@ -397,13 +407,40 @@ function adjustindex() {
   echo "✓ Index diperbarui! Index Terakhir   : 0\n";
   echo "✓ Index diperbarui! Total Akun Baru  : 0\n";
   echo "✓ Index diperbarui! Total Semua Akun : $totalUnique\n";
-
+   
   if ($duplicatesRemoved > 0) {
     echo "✓ Duplikat dihapus : $duplicatesRemoved baris duplikat telah dihapus dari file 0\n";
   } else {
     echo "✓ Tidak ada duplikat ditemukan di file 0\n";
   }
 }
+
+
+function hapusFileFTTanpaExt($dir = __DIR__)
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    $files = scandir($dir);
+
+    foreach ($files as $file) {
+        if ($file === '.' || $file === '..') continue;
+
+        $path = $dir . DIRECTORY_SEPARATOR . $file;
+
+        if (!is_file($path)) continue;
+
+        // tanpa extension
+        if (pathinfo($file, PATHINFO_EXTENSION) !== '') continue;
+
+        // diawali F atau T
+        if (!preg_match('/^[FT]/', $file)) continue;
+
+        unlink($path);
+    }
+}
+
 
 function getTanggalOtomatis() {
   date_default_timezone_set('Asia/Jakarta');
@@ -1118,10 +1155,77 @@ function autoCekpin() {
   sleep(2);
 
   jalankanKlik([
-    '5', '1', '', '', '', $namaFile, '1', (string)$jumlahBaris, '', ''
+    '5', '1', '', '', '', $namaFile, '1', (string)$jumlahBaris, '', '', '', ''
   ]);
 }
 
+
+function autoCancel() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK CANCEL TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $namaFile = autoCekKodeToko();
+
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan proses...\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '5', '3', $namaFile, '1', (string)$jumlahBaris, '', '', '', ''
+  ]);
+}
+
+
+function autoCekPayment() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK PAYMENT TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $namaFile = autoCekKodeToko();
+
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan proses...\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '5', '2', $namaFile, '1', (string)$jumlahBaris, '', '', '', ''
+  ]);
+}
 
 /*===========================================
                 KIRIM DATA PEMBAYARAN
@@ -3280,4 +3384,166 @@ function generateOrderFormat($store , $qtyKeranjang ) {
     if (!empty($add)) {
         file_put_contents($zeroFile, implode("\n", $add) . "\n", FILE_APPEND);
     }
+}
+
+
+function sampah() {
+    $dir = "/data/data/com.termux/files/usr/tmp";
+
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    $bytes = 0;
+
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($it as $file) {
+        $bytes += $file->getSize();
+    }
+
+    $mb = round($bytes / (1024 * 1024), 2);
+    $gb = round($bytes / (1024 * 1024 * 1024), 2);
+
+    return $gb;
+}
+
+
+function buatFileKupon()
+{
+    $sumberFile = '0';
+    $outputFile = 'gaskupon.txt';
+
+    if (!file_exists($sumberFile)) {
+        die("File 0.txt tidak ditemukan!\n");
+    }
+
+    if (file_exists($outputFile)) {
+        unlink($outputFile);
+    }
+
+    $lines = file($sumberFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $data  = [];
+
+    foreach ($lines as $i => $line) {
+        $parts = explode(":", $line);
+        if (!empty($parts[0])) {
+            $data[] = strtoupper($parts[0]);
+            echo "\033[93;1m[" . ($i + 1) . "] \033[97;1m" . strtoupper($parts[0]) . PHP_EOL;
+        }
+    }
+
+    if (empty($data)) {
+        die("Data kosong\n");
+    }
+
+    echo "\n\n\033[93;1m Masukkan baris awal \033[96;1m : ";
+    $awal = (int) trim(fgets(STDIN));
+
+    echo "\033[93;1m Masukkan baris akhir \033[96;1m: ";
+    $akhir = (int) trim(fgets(STDIN));
+
+    if ($awal < 1 || $akhir > count($data) || $awal > $akhir) {
+        die("Rentang baris tidak valid\n");
+    }
+
+    echo "\033[93;1m Masukkan kode kupon \033[96;1m : ";
+    $kodeKupon = strtoupper(trim(fgets(STDIN)));
+
+    $output = [];
+
+    for ($i = $awal - 1; $i <= $akhir - 1; $i++) {
+        $output[] = $data[$i] . ":" . $kodeKupon;
+    }
+
+    file_put_contents($outputFile, implode(PHP_EOL, $output) . PHP_EOL);
+
+    echo "Berhasil menulis " . count($output) . " baris ke gaskupon.txt\n";
+}
+
+
+
+function autoCoKupon() {
+  
+  $tanggalOtomatis = getTanggalOtomatis();
+  $bulanOtomatis = getBulanOtomatis();
+  $shiftOtomatis = getShiftOtomatis();
+  bacaKolom2DanJumlahBaris();
+  echo "\033[94;1mInput Kupon Baru ? (y/n) : ";
+  $baru = trim(fgets(STDIN));
+  if ($baru == "y"){
+  buatFileKupon();
+  }
+
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "         AUTO CHECKOUT KUPON           " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  date_default_timezone_set('Asia/Jakarta');
+  echo Warna::KUNING . "Waktu sistem    : " . date('H:i:s') . " WIB\n";
+  echo "Tanggal otomatis: $tanggalOtomatis\n";
+  echo "Bulan otomatis  : $bulanOtomatis\n";
+  echo "Shift           : {$shiftOtomatis['info']}\n" . Warna::RESET;
+  
+    $tanggal = $tanggalOtomatis;
+    $bulan = $bulanOtomatis;
+    $shiftKode = $shiftOtomatis['kode'];
+    $shiftInfo = $shiftOtomatis['info'];
+    
+
+    echo Warna::BOLD_HIJAU . "\n✓ Menggunakan shift: $shiftInfo\n" . Warna::RESET;
+  
+   $jumlahBaris = 0;
+  
+    $file = fopen('gaskupon.txt', 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo "✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+    
+    sleep(2);
+  
+  jalankanKlik([
+    '4','1','2', 'jasdor.txt', 'y', 'n', 'n', 'gaskupon.txt',
+    $tanggal, $bulan, $shiftKode, 'n', 1,
+    '1', (string)$jumlahBaris, 'n', ''
+  ], true);
+}
+
+
+function bacaKolom2DanJumlahBaris($file = 'gaskupon.txt') {
+    if (!file_exists($file)) {
+    echo "\n\033[91;1mBelum Pernah Input Kupon\n";
+        return false;
+    }
+
+    $handle = fopen($file, 'r');
+    if (!$handle) {
+        return false;
+    }
+
+    $jumlahBaris  = 0;
+    $kolomKedua   = false;
+
+    while (($line = fgets($handle)) !== false) {
+        $line = trim($line);
+        if ($line === '') continue;
+
+        $jumlahBaris++;
+
+        if ($jumlahBaris === 1) {
+            $kolom = explode(':', $line);
+            $kolomKedua = $kolom[1] ?? false;
+        }
+    }
+
+    fclose($handle);
+    echo "\n\033[96;1mKupon Saat ini : \033[92;1m$kolomKedua\n";
+    echo "\033[96;1mTotal Akun     : \033[92;1m$jumlahBaris\n";
+    
 }

